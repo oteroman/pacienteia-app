@@ -1,0 +1,48 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { getActiveClinicId } from '@/lib/tenant/active-clinic'
+import { AppointmentCalendar } from '@/components/appointment/appointment-calendar'
+import { LinkButton } from '@/components/ui/button'
+import type { Appointment, Patient } from '@/types/database'
+
+interface PageProps {
+  searchParams: Promise<{ year?: string; month?: string }>
+}
+
+export default async function AppointmentsPage({ searchParams }: PageProps) {
+  const clinicId = await getActiveClinicId()
+  if (!clinicId) redirect('/clinic-selector')
+
+  const { year, month } = await searchParams
+  const now = new Date()
+  const y = Number(year ?? now.getFullYear())
+  const m = Number(month ?? now.getMonth())  // 0-indexed
+
+  const startDate = new Date(y, m, 1).toISOString()
+  const endDate   = new Date(y, m + 1, 0, 23, 59, 59).toISOString()
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('appointments')
+    .select('*, patients(full_name)')
+    .eq('clinic_id', clinicId)
+    .gte('scheduled_at', startDate)
+    .lte('scheduled_at', endDate)
+    .order('scheduled_at')
+
+  type AptWithPatient = Appointment & { patients: Pick<Patient, 'full_name'> | null }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Citas</h1>
+        <LinkButton href="/appointments/new">+ Nueva cita</LinkButton>
+      </div>
+      <AppointmentCalendar
+        appointments={(data ?? []) as unknown as AptWithPatient[]}
+        year={y}
+        month={m}
+      />
+    </div>
+  )
+}
