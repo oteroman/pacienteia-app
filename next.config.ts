@@ -1,18 +1,14 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co' },
-    ],
-  },
-  // Añadimos estas opciones para saltar los errores de TypeScript y ESLint en el build
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true,  // Skip type checking en build
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Skip ESLint en build
+  },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'class-variance-authority'], // Next 15 opt
   },
 }
 
-export default nextConfig
+module.exports = nextConfig;
