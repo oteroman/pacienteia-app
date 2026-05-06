@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { appointmentSchema, type AppointmentFormValues } from '@/lib/validations/appointment'
+import { appointmentSchema, type AppointmentFormValues, type AppointmentFormInput } from '@/lib/validations/appointment'
 import { FormField } from '@/components/ui/form-field'
 import { Input, Textarea, Select } from '@/components/ui/input'
 import { Button, LinkButton } from '@/components/ui/button'
@@ -26,7 +26,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, clinicId, actio
   const [showDropdown, setShowDropdown] = useState(false)
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<AppointmentFormValues>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<AppointmentFormInput, any, AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       patient_id:     defaultPatientId ?? '',

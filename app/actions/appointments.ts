@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { appointmentSchema, type AppointmentFormValues } from '@/lib/validations/appointment'
-import type { AppointmentStatus } from '@/types/database'
+import type { AppointmentStatus, TablesInsert, TablesUpdate } from '@/types/database'
 
 async function getClinicId() {
   const clinicId = await getActiveClinicId()
@@ -13,20 +13,29 @@ async function getClinicId() {
   return clinicId
 }
 
+// Supabase JS 2.x + TS 5.8: conditional type `Relation extends {Insert}` is deferred
+// through indexed access chains, making Row=never. Data is pre-typed via TablesInsert/Update.
+function mut(client: Awaited<ReturnType<typeof createClient>>) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return client as any
+}
+
 export async function createAppointment(data: AppointmentFormValues) {
   const clinicId = await getClinicId()
   const parsed = appointmentSchema.safeParse(data)
-  if (!parsed.success) return { error: parsed.error.errors[0].message }
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
 
   const { notes, price, ...rest } = parsed.data
   const supabase = await createClient()
 
-  const { error } = await supabase.from('appointments').insert({
+  const insertData: TablesInsert<'appointments'> = {
     ...rest,
     clinic_id: clinicId,
     notes:     notes || null,
     price:     price ?? null,
-  })
+  }
+
+  const { error } = await mut(supabase).from('appointments').insert(insertData)
 
   if (error) return { error: error.message }
   revalidatePath('/appointments')
@@ -37,9 +46,11 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
   const clinicId = await getClinicId()
   const supabase = await createClient()
 
-  const { error } = await supabase
+  const updateData: TablesUpdate<'appointments'> = { status }
+
+  const { error } = await mut(supabase)
     .from('appointments')
-    .update({ status })
+    .update(updateData)
     .eq('id', id)
     .eq('clinic_id', clinicId)
 
@@ -48,28 +59,26 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
   revalidatePath('/dashboard')
 }
 
-export async function cancelAppointment(id: string) {
+export async function cancelAppointment(id: string): Promise<void> {
   const clinicId = await getClinicId()
   const supabase = await createClient()
 
-  // Cancel appointment + log workflow run in parallel
+  const cancelData: TablesUpdate<'appointments'> = { status: 'cancelled' }
+  const workflowData: TablesInsert<'workflow_runs'> = {
+    clinic_id:   clinicId,
+    event_type:  'appointment.cancelled',
+    entity_type: 'appointment',
+    entity_id:   id,
+    status:      'pending',
+    payload:     { appointment_id: id },
+  }
+
   const [aptRes, wfRes] = await Promise.all([
-    supabase
-      .from('appointments')
-      .update({ status: 'cancelled' })
-      .eq('id', id)
-      .eq('clinic_id', clinicId),
-    supabase.from('workflow_runs').insert({
-      clinic_id:   clinicId,
-      event_type:  'appointment.cancelled',
-      entity_type: 'appointment',
-      entity_id:   id,
-      status:      'pending',
-      payload:     { appointment_id: id },
-    }),
+    mut(supabase).from('appointments').update(cancelData).eq('id', id).eq('clinic_id', clinicId),
+    mut(supabase).from('workflow_runs').insert(workflowData),
   ])
 
-  if (aptRes.error) return { error: aptRes.error.message }
+  if (aptRes.error) console.error('[cancelAppointment]', aptRes.error.message)
   if (wfRes.error)  console.error('[workflow_run] insert failed:', wfRes.error.message)
 
   revalidatePath('/appointments')

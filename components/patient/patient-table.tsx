@@ -35,7 +35,7 @@ export function PatientTable({ patients }: PatientTableProps) {
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`¿Eliminar a ${name}? Esta acción no se puede deshacer.`)) return
-    startTransition(() => softDeletePatient(id))
+    startTransition(async () => { await softDeletePatient(id) })
   }
 
   return (
@@ -118,10 +118,10 @@ export function PatientTable({ patients }: PatientTableProps) {
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
                     <div className="flex flex-wrap gap-1 max-w-[200px]">
-                      {p.tags.slice(0, 3).map((t) => (
+                      {(p.tags ?? []).slice(0, 3).map((t) => (
                         <Badge key={t} variant="blue" className="text-xs">{t}</Badge>
                       ))}
-                      {p.tags.length > 3 && (
+                      {(p.tags ?? []).length > 3 && (
                         <Badge variant="gray">+{p.tags.length - 3}</Badge>
                       )}
                     </div>

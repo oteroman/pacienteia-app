@@ -13,3 +13,4 @@ export const patientSchema = z.object({
 })
 
 export type PatientFormValues = z.infer<typeof patientSchema>
+export type PatientFormInput  = z.input<typeof patientSchema>

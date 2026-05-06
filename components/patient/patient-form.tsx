@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { patientSchema, type PatientFormValues } from '@/lib/validations/patient'
+import { patientSchema, type PatientFormValues, type PatientFormInput } from '@/lib/validations/patient'
 import { FormField } from '@/components/ui/form-field'
 import { Input, Textarea, Select } from '@/components/ui/input'
 import { Button, LinkButton } from '@/components/ui/button'
@@ -21,7 +21,7 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
   const [isPending, startTransition] = useTransition()
   const [tagInput, setTagInput] = useState('')
 
-  const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<PatientFormValues>({
+  const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<PatientFormInput, any, PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
       full_name:       defaultValues?.full_name ?? '',
@@ -36,7 +36,7 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
     },
   })
 
-  const tags = watch('tags')
+  const tags = watch('tags') ?? []
   const photoUrl = watch('photo_url')
 
   function addTag() {

@@ -6,6 +6,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'class-variance-authority'],
+  },
   images: {
     remotePatterns: [
       {

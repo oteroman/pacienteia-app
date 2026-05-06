@@ -10,3 +10,4 @@ export const appointmentSchema = z.object({
 })
 
 export type AppointmentFormValues = z.infer<typeof appointmentSchema>
+export type AppointmentFormInput  = z.input<typeof appointmentSchema>

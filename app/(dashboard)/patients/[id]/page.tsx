@@ -19,15 +19,26 @@ export default async function PatientDetailPage({ params }: PageProps) {
 
   const supabase = await createClient()
 
-  const [patientRes, appointmentsRes] = await Promise.all([
-    supabase.from('patients').select('*').eq('id', id).eq('clinic_id', clinicId).is('deleted_at', null).single(),
-    supabase.from('appointments').select('*').eq('patient_id', id).eq('clinic_id', clinicId).order('scheduled_at', { ascending: false }).limit(20),
-  ])
+  const { data: patientData } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('id', id)
+    .eq('clinic_id', clinicId)
+    .is('deleted_at', null)
+    .single()
 
-  if (!patientRes.data) notFound()
+  if (!patientData) notFound()
+  const patient = patientData as Patient
 
-  const patient = patientRes.data as Patient
-  const appointments = (appointmentsRes.data ?? []) as Appointment[]
+  const { data: aptData } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('patient_id', id)
+    .eq('clinic_id', clinicId)
+    .order('scheduled_at', { ascending: false })
+    .limit(20)
+
+  const appointments = (aptData ?? []) as Appointment[]
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -47,7 +58,7 @@ export default async function PatientDetailPage({ params }: PageProps) {
             <h1 className="text-2xl font-bold text-gray-900">{patient.full_name}</h1>
             <div className="flex items-center gap-2 mt-1">
               <PatientStatusBadge status={patient.status as PatientStatus} />
-              {patient.tags.map((t) => <Badge key={t} variant="blue">{t}</Badge>)}
+              {(patient.tags ?? []).map((t) => <Badge key={t} variant="blue">{t}</Badge>)}
             </div>
           </div>
         </div>
@@ -91,29 +102,35 @@ export default async function PatientDetailPage({ params }: PageProps) {
           <p className="px-5 py-8 text-sm text-gray-400 text-center">Sin citas registradas</p>
         ) : (
           <ul className="divide-y divide-gray-50">
-            {appointments.map((apt) => (
-              <li key={apt.id} className="px-5 py-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{apt.treatment_type}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(apt.scheduled_at).toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-                    {' · '}
-                    {new Date(apt.scheduled_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {apt.price && <span className="text-sm text-gray-500">S/ {Number(apt.price).toFixed(0)}</span>}
-                  <AppointmentStatusBadge status={apt.status as AppointmentStatus} />
-                  {apt.status === 'scheduled' || apt.status === 'confirmed' ? (
-                    <form action={cancelAppointment.bind(null, apt.id)}>
-                      <button type="submit" className="text-xs text-gray-400 hover:text-red-600 transition-colors">
-                        Cancelar
-                      </button>
-                    </form>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+            {appointments.map((apt) => {
+              async function cancel() {
+                'use server'
+                await cancelAppointment(apt.id)
+              }
+              return (
+                <li key={apt.id} className="px-5 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{apt.treatment_type}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(apt.scheduled_at).toLocaleDateString('es-PE', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                      {' · '}
+                      {new Date(apt.scheduled_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {apt.price && <span className="text-sm text-gray-500">S/ {Number(apt.price).toFixed(0)}</span>}
+                    <AppointmentStatusBadge status={apt.status as AppointmentStatus} />
+                    {(apt.status === 'scheduled' || apt.status === 'confirmed') && (
+                      <form action={cancel}>
+                        <button type="submit" className="text-xs text-gray-400 hover:text-red-600 transition-colors">
+                          Cancelar
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
