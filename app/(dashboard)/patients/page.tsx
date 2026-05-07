@@ -5,7 +5,7 @@ import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { PatientTable } from '@/components/patient/patient-table'
 import { PatientCard } from '@/components/patient/card'
 import { Pagination } from '@/components/ui/pagination'
-import { LinkButton } from '@/components/ui/button'
+import { GatedActionButton } from '@/components/plan/gated-action-button'
 import { ViewToggle } from '@/components/patient/view-toggle'
 import type { Patient, PatientStatus } from '@/types/database'
 
@@ -53,7 +53,9 @@ export default async function PatientsPage({ searchParams }: PageProps) {
         </div>
         <div className="flex items-center gap-3">
           <Suspense><ViewToggle current={view} /></Suspense>
-          <LinkButton href="/patients/new">+ Nuevo paciente</LinkButton>
+          <GatedActionButton href="/patients/new" resource="leads">
+            + Nuevo paciente
+          </GatedActionButton>
         </div>
       </div>
 

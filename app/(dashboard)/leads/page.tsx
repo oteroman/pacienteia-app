@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { LeadTable } from '@/components/lead/lead-table'
+import { GatedActionButton } from '@/components/plan/gated-action-button'
 import type { LeadEvent } from '@/types/database'
 
 type LeadPayload = { ai_priority?: string }
@@ -51,6 +52,9 @@ export default async function LeadsPage({ searchParams }: PageProps) {
             {coldCount > 0 && <span className="text-gray-400">{coldCount} cold</span>}
           </div>
         </div>
+        <GatedActionButton href="/leads/new" resource="leads">
+          + Nuevo lead
+        </GatedActionButton>
       </div>
 
       <Suspense>

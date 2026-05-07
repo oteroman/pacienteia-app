@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { usePlanStatus } from '@/context/plan-status'
 import type { GateResult } from '@/lib/plans/gating'
 
-type GatedResource = 'leads' | 'appointments' | 'users'
-type GatedOperation = 'create' | 'edit'
+export type GatedResource = 'leads' | 'appointments' | 'users'
+export type GatedOperation = 'create' | 'edit'
 
 interface RouteGateProps {
   resource: GatedResource

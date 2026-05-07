@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { AppointmentCalendar } from '@/components/appointment/appointment-calendar'
-import { LinkButton } from '@/components/ui/button'
+import { GatedActionButton } from '@/components/plan/gated-action-button'
 import type { Appointment, Patient } from '@/types/database'
 
 interface PageProps {
@@ -36,7 +36,9 @@ export default async function AppointmentsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Citas</h1>
-        <LinkButton href="/appointments/new">+ Nueva cita</LinkButton>
+        <GatedActionButton href="/appointments/new" resource="appointments">
+          + Nueva cita
+        </GatedActionButton>
       </div>
       <AppointmentCalendar
         appointments={(data ?? []) as unknown as AptWithPatient[]}
