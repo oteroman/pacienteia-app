@@ -1,0 +1,202 @@
+{
+  "name": "PacienteIA - Escudo de Reputación",
+  "nodes": [
+    {
+      "id": "wh-001",
+      "name": "Webhook - Cita completada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "appointment-completed",
+        "responseMode": "onReceived",
+        "responseData": "noData",
+        "options": {}
+      }
+    },
+    {
+      "id": "wait-002",
+      "name": "Esperar 2 horas",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [460, 300],
+      "parameters": {
+        "amount": 2,
+        "unit": "hours"
+      }
+    },
+    {
+      "id": "wa-003",
+      "name": "WhatsApp - Encuesta satisfacción",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.WA_PHONE_NUMBER_ID + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $('Webhook - Cita completada').first().json.body.patient_phone.replace(/[^0-9]/g, ''), type: 'text', text: { preview_url: false, body: 'Hola ' + $('Webhook - Cita completada').first().json.body.patient_name.split(' ')[0] + ' 👋\\n\\nGracias por visitarnos hoy en ' + $('Webhook - Cita completada').first().json.body.clinic_name + '. Fue un placer atenderte.\\n\\n¿Cómo te sentiste con tu tratamiento de hoy?\\nResponde con un número del 1 al 5 ⭐\\n\\n1 = Muy mal\\n2 = Mal\\n3 = Regular\\n4 = Bien\\n5 = Excelente' } }) }}"
+      }
+    },
+    {
+      "id": "wh-resp-004",
+      "name": "Webhook - Respuesta paciente",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reputation-response",
+        "responseMode": "onReceived",
+        "responseData": "noData",
+        "options": {}
+      }
+    },
+    {
+      "id": "code-005",
+      "name": "Code - Parsear score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body; const text = (body.message || body.text || '').trim(); const score = parseInt(text.match(/[1-5]/)?.[0] || '0', 10); if (score < 1 || score > 5) { return [{ json: { valid: false, score: 0, phone: body.phone, patient_id: body.patient_id, appointment_id: body.appointment_id, clinic_id: body.clinic_id } }]; } return [{ json: { valid: true, score, is_positive: score >= 4, phone: body.phone, patient_id: body.patient_id, appointment_id: body.appointment_id, clinic_id: body.clinic_id, patient_name: body.patient_name } }];"
+      }
+    },
+    {
+      "id": "if-006",
+      "name": "IF - Score válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.valid }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equal" } }]
+        }
+      }
+    },
+    {
+      "id": "if-007",
+      "name": "IF - Positivo (4-5)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1560, 200],
+      "parameters": {
+        "conditions": {
+          "conditions": [{ "leftValue": "={{ $json.is_positive }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equal" } }]
+        }
+      }
+    },
+    {
+      "id": "wa-008",
+      "name": "WhatsApp - Link reseña Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.WA_PHONE_NUMBER_ID + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $json.phone.replace(/[^0-9]/g, ''), type: 'text', text: { preview_url: false, body: '¡Qué bueno saberlo! 😊 Nos alegra que hayas tenido una experiencia excelente.\\n\\nSi tienes un minuto, ¿nos dejarías una reseña en Google? Eso nos ayuda muchísimo a llegar a más personas como tú:\\n\\n👉 ' + $env.GOOGLE_PROFILE_URL + '\\n\\n¡Gracias de corazón! Te esperamos pronto 💆‍♀️' } }) }}"
+      }
+    },
+    {
+      "id": "http-009",
+      "name": "App - Guardar feedback positivo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 120],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_URL }}/api/webhooks/feedback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ clinic_id: $('IF - Positivo (4-5)').first().json.clinic_id, patient_id: $('IF - Positivo (4-5)').first().json.patient_id, appointment_id: $('IF - Positivo (4-5)').first().json.appointment_id, score: $('IF - Positivo (4-5)').first().json.score, google_review_sent: true }) }}"
+      }
+    },
+    {
+      "id": "http-010",
+      "name": "App - Guardar feedback negativo + alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 380],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_URL }}/api/webhooks/feedback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ clinic_id: $json.clinic_id, patient_id: $json.patient_id, appointment_id: $json.appointment_id, score: $json.score, google_review_sent: false }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook - Cita completada": {
+      "main": [[{ "node": "Esperar 2 horas", "type": "main", "index": 0 }]]
+    },
+    "Esperar 2 horas": {
+      "main": [[{ "node": "WhatsApp - Encuesta satisfacción", "type": "main", "index": 0 }]]
+    },
+    "Webhook - Respuesta paciente": {
+      "main": [[{ "node": "Code - Parsear score", "type": "main", "index": 0 }]]
+    },
+    "Code - Parsear score": {
+      "main": [[{ "node": "IF - Score válido", "type": "main", "index": 0 }]]
+    },
+    "IF - Score válido": {
+      "main": [
+        [{ "node": "IF - Positivo (4-5)", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "IF - Positivo (4-5)": {
+      "main": [
+        [{ "node": "WhatsApp - Link reseña Google", "type": "main", "index": 0 }],
+        [{ "node": "App - Guardar feedback negativo + alerta", "type": "main", "index": 0 }]
+      ]
+    },
+    "WhatsApp - Link reseña Google": {
+      "main": [[{ "node": "App - Guardar feedback positivo", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "_readme": {
+    "env_vars": ["APP_URL", "WEBHOOK_SECRET", "WA_PHONE_NUMBER_ID", "WA_ACCESS_TOKEN", "GOOGLE_PROFILE_URL"],
+    "trigger": "Llama al webhook 'appointment-completed' desde tu app cuando una cita cambia a status='completed'.",
+    "response_webhook": "El webhook 'reputation-response' recibe la respuesta del paciente desde WhatsApp Business.",
+    "description": "2h después de visita completada: encuesta 1-5. Score 4-5: pide reseña Google. Score 1-3: guarda alerta, no pide reseña."
+  }
+}

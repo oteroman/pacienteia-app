@@ -99,6 +99,7 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string | null
           deleted_at: string | null
+          google_profile_url: string | null
           id: string
           logo_url: string | null
           name: string
@@ -120,6 +121,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           deleted_at?: string | null
+          google_profile_url?: string | null
           id?: string
           logo_url?: string | null
           name: string
@@ -141,6 +143,7 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           deleted_at?: string | null
+          google_profile_url?: string | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -185,6 +188,88 @@ export type Database = {
         }
         Relationships: [
           { foreignKeyName: 'subscription_usage_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] }
+        ]
+      }
+      reactivation_campaigns: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          patient_id: string
+          responded_at: string | null
+          scheduled_at: string | null
+          sent_at: string
+          status: 'sent' | 'responded' | 'scheduled' | 'ignored'
+          step: 1 | 2
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          responded_at?: string | null
+          scheduled_at?: string | null
+          sent_at?: string
+          status?: 'sent' | 'responded' | 'scheduled' | 'ignored'
+          step?: 1 | 2
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          responded_at?: string | null
+          scheduled_at?: string | null
+          sent_at?: string
+          status?: 'sent' | 'responded' | 'scheduled' | 'ignored'
+          step?: 1 | 2
+        }
+        Relationships: [
+          { foreignKeyName: 'reactivation_campaigns_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] },
+          { foreignKeyName: 'reactivation_campaigns_patient_id_fkey'; columns: ['patient_id']; referencedRelation: 'patients'; referencedColumns: ['id'] },
+        ]
+      }
+      patient_feedback: {
+        Row: {
+          alert_sent: boolean
+          appointment_id: string | null
+          channel: string
+          clinic_id: string
+          created_at: string
+          google_review_sent: boolean
+          id: string
+          patient_id: string | null
+          score: number
+        }
+        Insert: {
+          alert_sent?: boolean
+          appointment_id?: string | null
+          channel?: string
+          clinic_id: string
+          created_at?: string
+          google_review_sent?: boolean
+          id?: string
+          patient_id?: string | null
+          score: number
+        }
+        Update: {
+          alert_sent?: boolean
+          appointment_id?: string | null
+          channel?: string
+          clinic_id?: string
+          created_at?: string
+          google_review_sent?: boolean
+          id?: string
+          patient_id?: string | null
+          score?: number
+        }
+        Relationships: [
+          { foreignKeyName: 'patient_feedback_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] },
+          { foreignKeyName: 'patient_feedback_patient_id_fkey'; columns: ['patient_id']; referencedRelation: 'patients'; referencedColumns: ['id'] },
+          { foreignKeyName: 'patient_feedback_appointment_id_fkey'; columns: ['appointment_id']; referencedRelation: 'appointments'; referencedColumns: ['id'] },
         ]
       }
       lead_events: {
@@ -436,5 +521,8 @@ export type WorkflowStatus = 'pending' | 'running' | 'success' | 'failed'
 export type Plan = 'trial' | 'basic' | 'pro' | 'premium'
 export type SubscriptionStatus = 'trialing' | 'active' | 'overdue' | 'cancelled'
 export type SubscriptionUsage = Tables<'subscription_usage'>
+
+export type ReactivationCampaign = Tables<'reactivation_campaigns'>
+export type PatientFeedback = Tables<'patient_feedback'>
 
 export type ClinicWithRole = Clinic & { role: ClinicRole }

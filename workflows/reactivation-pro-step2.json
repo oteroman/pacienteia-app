@@ -1,0 +1,161 @@
+{
+  "name": "PacienteIA - Reactivación Pro (Step 2 — incentivo)",
+  "nodes": [
+    {
+      "id": "cron-001",
+      "name": "Cron - Lunes 9AM (semana siguiente)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * 1" }]
+        }
+      }
+    },
+    {
+      "id": "http-002",
+      "name": "App - Obtener pendientes step 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_URL }}/api/internal/reactivation?clinic_id={{ $env.CLINIC_ID }}&step=2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-003",
+      "name": "IF - Hay pendientes",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "conditions": {
+          "conditions": [{
+            "leftValue": "={{ $json.count }}",
+            "rightValue": 0,
+            "operator": { "type": "number", "operation": "gt" }
+          }]
+        }
+      }
+    },
+    {
+      "id": "split-004",
+      "name": "Split - Por paciente",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [900, 200],
+      "parameters": { "batchSize": 1, "options": {} }
+    },
+    {
+      "id": "http-005",
+      "name": "App - Supabase GET paciente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 200],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'https://hwuuuslpzxcgpfzdjrhz.supabase.co/rest/v1/patients?id=eq.' + $json.id + '&select=full_name,phone' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "http-006",
+      "name": "App - Registrar step 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_URL }}/api/webhooks/reactivation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ clinic_id: $env.CLINIC_ID, patient_id: $('Split - Por paciente').item.json.id, step: 2, action: 'create_step2' }) }}"
+      }
+    },
+    {
+      "id": "code-007",
+      "name": "Code - Calcular viernes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 200],
+      "parameters": {
+        "jsCode": "const d = new Date(); const day = d.getDay(); const diff = (5 - day + 7) % 7 || 7; d.setDate(d.getDate() + diff); const options = { weekday: 'long', day: '2-digit', month: 'long' }; const viernes = d.toLocaleDateString('es-PE', options); const patient = $('App - Supabase GET paciente').first().json; return [{ json: { full_name: patient.full_name, phone: patient.phone, viernes } }];"
+      }
+    },
+    {
+      "id": "wa-008",
+      "name": "WhatsApp - Incentivo paso 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1720, 200],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.WA_PHONE_NUMBER_ID + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $json.phone.replace(/[^0-9]/g, ''), type: 'text', text: { preview_url: false, body: 'Hola ' + $json.full_name.split(' ')[0] + ', sabemos que el tiempo es valioso 😊\\n\\nPor eso queremos ofrecerte algo especial: *S/50 de descuento* en tu próxima sesión si agendas antes del ' + $json.viernes + '.\\n\\n¿Te agendamos? Responde *SÍ* o escríbenos cuando puedas 🌟' } }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Cron - Lunes 9AM (semana siguiente)": {
+      "main": [[{ "node": "App - Obtener pendientes step 2", "type": "main", "index": 0 }]]
+    },
+    "App - Obtener pendientes step 2": {
+      "main": [[{ "node": "IF - Hay pendientes", "type": "main", "index": 0 }]]
+    },
+    "IF - Hay pendientes": {
+      "main": [
+        [{ "node": "Split - Por paciente", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Split - Por paciente": {
+      "main": [[{ "node": "App - Supabase GET paciente", "type": "main", "index": 0 }]]
+    },
+    "App - Supabase GET paciente": {
+      "main": [[{ "node": "App - Registrar step 2", "type": "main", "index": 0 }]]
+    },
+    "App - Registrar step 2": {
+      "main": [[{ "node": "Code - Calcular viernes", "type": "main", "index": 0 }]]
+    },
+    "Code - Calcular viernes": {
+      "main": [[{ "node": "WhatsApp - Incentivo paso 2", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "_readme": {
+    "env_vars": ["APP_URL", "CLINIC_ID", "WEBHOOK_SECRET", "SUPABASE_SERVICE_KEY", "WA_PHONE_NUMBER_ID", "WA_ACCESS_TOKEN"],
+    "description": "Ejecuta lunes siguiente. Busca pacientes en step 1 sin respuesta en 7+ días. Envía mensaje con descuento S/50."
+  }
+}

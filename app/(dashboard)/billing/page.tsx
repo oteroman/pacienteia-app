@@ -4,10 +4,14 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { getClinicPlanStatus } from '@/lib/plans/gating'
 import { getFullUsage } from '@/lib/plans/usage'
+import { getReactivationStats } from '@/lib/reactivation/stats'
+import { getReputationStats } from '@/lib/reputation/stats'
 import { UNLIMITED, type PlanFeature } from '@/lib/plans/config'
 import { PlanBadge } from '@/components/plan/plan-badge'
 import { UsageBar } from '@/components/plan/usage-bar'
 import { UpgradeBanner } from '@/components/plan/upgrade-banner'
+import { ReactivationStatsCard } from '@/components/plan/reactivation-stats'
+import { ReputationStatsCard } from '@/components/plan/reputation-stats'
 import type { Clinic } from '@/types/database'
 
 // Feature labels shown in the "included in your plan" section
@@ -47,9 +51,11 @@ export default async function BillingPage() {
   if (!clinicId) redirect('/clinic-selector')
 
   const supabase = await createClient()
-  const [usage, { data: rawClinic }] = await Promise.all([
+  const [usage, { data: rawClinic }, reactivationStats, reputationStats] = await Promise.all([
     getFullUsage(clinicId),
     supabase.from('clinics').select('*').eq('id', clinicId).single(),
+    getReactivationStats(clinicId),
+    getReputationStats(clinicId),
   ])
 
   const clinic = rawClinic as Clinic | null
@@ -179,6 +185,16 @@ export default async function BillingPage() {
           })}
         </ul>
       </div>
+
+      {/* ── REACTIVACIÓN PRO STATS ── */}
+      {(limits.features as readonly string[]).includes('reactivation') && (
+        <ReactivationStatsCard stats={reactivationStats} />
+      )}
+
+      {/* ── ESCUDO DE REPUTACIÓN STATS ── */}
+      {(limits.features as readonly string[]).includes('reputation_shield') && (
+        <ReputationStatsCard stats={reputationStats} />
+      )}
 
       {/* ── CTA UPGRADE ── */}
       {sub.plan !== 'premium' && (

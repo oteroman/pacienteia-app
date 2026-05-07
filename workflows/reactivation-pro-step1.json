@@ -1,0 +1,126 @@
+{
+  "name": "PacienteIA - Reactivación Pro (Step 1)",
+  "nodes": [
+    {
+      "id": "cron-001",
+      "name": "Cron - Lunes 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * 1" }]
+        }
+      }
+    },
+    {
+      "id": "http-002",
+      "name": "App - Obtener pacientes inactivos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.APP_URL }}/api/internal/reactivation?clinic_id={{ $env.CLINIC_ID }}&step=1&limit=50",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "split-003",
+      "name": "Split - Por paciente",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [680, 300],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      }
+    },
+    {
+      "id": "http-004",
+      "name": "App - Registrar campaña step 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APP_URL }}/api/webhooks/reactivation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-webhook-secret", "value": "={{ $env.WEBHOOK_SECRET }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ clinic_id: $env.CLINIC_ID, patient_id: $json.id, step: 1, action: 'create_step1' }) }}"
+      }
+    },
+    {
+      "id": "wa-005",
+      "name": "WhatsApp - Mensaje reactivación paso 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v20.0/' + $env.WA_PHONE_NUMBER_ID + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.WA_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "body": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $('Split - Por paciente').item.json.phone.replace(/[^0-9]/g, ''), type: 'text', text: { preview_url: false, body: 'Hola ' + $('Split - Por paciente').item.json.full_name.split(' ')[0] + ' 💆‍♀️\\n\\nHace un tiempo que no te vemos y queríamos saber cómo estás.\\n\\n¿Te gustaría retomar tus tratamientos? Tenemos espacios disponibles esta semana.\\n\\nResponde *SÍ* si quieres que te llamemos para coordinar 📅' } }) }}"
+      }
+    },
+    {
+      "id": "wait-006",
+      "name": "Esperar entre mensajes (1s)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1340, 300],
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      }
+    }
+  ],
+  "connections": {
+    "Cron - Lunes 9AM": {
+      "main": [[{ "node": "App - Obtener pacientes inactivos", "type": "main", "index": 0 }]]
+    },
+    "App - Obtener pacientes inactivos": {
+      "main": [[{ "node": "Split - Por paciente", "type": "main", "index": 0 }]]
+    },
+    "Split - Por paciente": {
+      "main": [[{ "node": "App - Registrar campaña step 1", "type": "main", "index": 0 }]]
+    },
+    "App - Registrar campaña step 1": {
+      "main": [[{ "node": "WhatsApp - Mensaje reactivación paso 1", "type": "main", "index": 0 }]]
+    },
+    "WhatsApp - Mensaje reactivación paso 1": {
+      "main": [[{ "node": "Esperar entre mensajes (1s)", "type": "main", "index": 0 }]]
+    },
+    "Esperar entre mensajes (1s)": {
+      "main": [[{ "node": "Split - Por paciente", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "_readme": {
+    "env_vars": ["APP_URL", "CLINIC_ID", "WEBHOOK_SECRET", "WA_PHONE_NUMBER_ID", "WA_ACCESS_TOKEN"],
+    "description": "Cron semanal lunes 9AM. Obtiene pacientes inactivos 90+ días, registra campaña step 1 y envía WhatsApp.",
+    "companion": "reactivation-pro-step2.json — ejecuta el miércoles siguiente para los que no respondieron."
+  }
+}
