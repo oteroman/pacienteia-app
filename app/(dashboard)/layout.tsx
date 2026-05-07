@@ -1,8 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
+import { getImpersonatedClinicId } from '@/lib/platform/auth'
 import { ClinicProvider } from '@/providers/clinic-provider'
 import { NavHeader } from '@/components/nav-header'
+import { ImpersonationBar } from '@/components/impersonation-bar'
 import { PlanStatusProvider } from '@/context/plan-status'
 import { GatingBanner } from '@/components/plan/gating-banner'
 import { getFullUsage } from '@/lib/plans/usage'
@@ -20,6 +23,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  // Check if this is a platform admin in impersonation mode
+  const impersonatedClinicId = await getImpersonatedClinicId()
+
+  // Check platform_role — platform admins without impersonation go to /platform
+  const sb = createAdminClient() as any
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('platform_role')
+    .eq('id', user.id)
+    .single()
+  const isPlatformAdmin = !!profile?.platform_role
+
+  if (isPlatformAdmin && !impersonatedClinicId) redirect('/platform')
 
   // Fetch all clinics the user belongs to (clinics nested to avoid extra round-trip)
   const { data: rawMemberships } = await supabase
@@ -60,6 +77,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <ClinicProvider clinic={activeClinic} allClinics={allClinics}>
       <PlanStatusProvider value={planStatus}>
         <div className="min-h-screen bg-gray-50 flex flex-col">
+          {impersonatedClinicId && <ImpersonationBar clinicName={activeClinic.name} />}
           <NavHeader user={{ email: user.email! }} />
           <GatingBanner />
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">

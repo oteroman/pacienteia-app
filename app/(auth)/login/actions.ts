@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { setActiveClinicId } from '@/lib/tenant/active-clinic'
 import { redirect } from 'next/navigation'
 
@@ -27,8 +28,18 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
     return { error: 'Credenciales incorrectas. Verifica tu email y contraseña.' }
   }
 
-  // Determine clinic context after successful login
+  // Determine routing after successful login
   const { data: { user } } = await supabase.auth.getUser()
+
+  // Platform admins go directly to /platform, skip clinic flow entirely
+  const sb = createAdminClient() as any
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('platform_role')
+    .eq('id', user!.id)
+    .single()
+
+  if (profile?.platform_role) redirect('/platform')
 
   const { data: memberships } = await supabase
     .from('clinic_members')

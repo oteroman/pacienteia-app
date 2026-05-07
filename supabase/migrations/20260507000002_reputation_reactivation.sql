@@ -19,7 +19,7 @@ CREATE TABLE public.reactivation_campaigns (
   scheduled_at  TIMESTAMPTZ,
   notes         TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (clinic_id, patient_id, step, sent_at::DATE)
+  UNIQUE (clinic_id, patient_id, step)
 );
 
 CREATE INDEX idx_reactivation_clinic     ON public.reactivation_campaigns (clinic_id, sent_at);
