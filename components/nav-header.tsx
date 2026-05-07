@@ -16,6 +16,7 @@ const NAV = [
   { label: 'Citas',      href: '/appointments' },
   { label: 'Leads',      href: '/leads' },
   { label: 'Mi plan',    href: '/billing' },
+  { label: 'Métricas',  href: '/analytics' },
 ]
 
 export function NavHeader({ user }: NavHeaderProps) {

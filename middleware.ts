@@ -38,6 +38,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/appointments') ||
     pathname.startsWith('/billing') ||
     pathname.startsWith('/settings') ||
+    pathname.startsWith('/analytics') ||
     pathname.startsWith('/blocked') ||
     pathname.startsWith('/clinic-selector') ||
     pathname === '/'

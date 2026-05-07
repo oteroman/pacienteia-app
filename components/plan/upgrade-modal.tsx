@@ -1,6 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { trackGatingEvent } from '@/app/actions/analytics'
 import type { GatedResource } from './route-gate'
 
 interface ModalContent {
@@ -89,11 +92,31 @@ interface UpgradeModalProps {
 export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
   const copy = COPY[gate][resource]
   const isSoft = gate === 'soft_blocked'
+  const pathname = usePathname()
+
+  // Track modal open once on mount
+  useEffect(() => {
+    void trackGatingEvent({ event: 'modal_opened', resource, gate_state: gate, source_page: pathname })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function handleClose() {
+    void trackGatingEvent({ event: 'modal_closed', resource, gate_state: gate, source_page: pathname })
+    onClose()
+  }
+
+  function handlePrimary() {
+    void trackGatingEvent({ event: 'cta_primary_clicked', resource, gate_state: gate, source_page: pathname })
+  }
+
+  function handleSecondary() {
+    void trackGatingEvent({ event: 'cta_secondary_clicked', resource, gate_state: gate, source_page: pathname })
+  }
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4"
@@ -107,7 +130,7 @@ export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
               <h2 className="text-base font-bold text-gray-900">{copy.title}</h2>
             </div>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               aria-label="Cerrar"
               className="text-gray-300 hover:text-gray-500 text-2xl leading-none flex-shrink-0 -mt-0.5"
             >
@@ -130,6 +153,7 @@ export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
         <div className="flex flex-col gap-2">
           <Link
             href={copy.primaryHref}
+            onClick={handlePrimary}
             className={`w-full text-center font-semibold text-sm px-4 py-2.5 rounded-lg transition-colors ${
               isSoft
                 ? 'bg-amber-500 hover:bg-amber-600 text-white'
@@ -142,13 +166,14 @@ export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
           {copy.secondaryHref ? (
             <Link
               href={copy.secondaryHref}
+              onClick={handleSecondary}
               className="w-full text-center text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {copy.secondaryCta}
             </Link>
           ) : (
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="w-full text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {copy.secondaryCta}

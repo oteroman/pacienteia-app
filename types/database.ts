@@ -190,6 +190,47 @@ export type Database = {
           { foreignKeyName: 'subscription_usage_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] }
         ]
       }
+      gating_events: {
+        Row: {
+          clinic_id:   string
+          created_at:  string
+          event:       string
+          gate_state:  string | null
+          id:          string
+          metadata:    Json | null
+          operation:   string | null
+          resource:    string | null
+          source_page: string | null
+          user_id:     string | null
+        }
+        Insert: {
+          clinic_id:   string
+          created_at?: string
+          event:       string
+          gate_state?: string | null
+          id?:         string
+          metadata?:   Json | null
+          operation?:  string | null
+          resource?:   string | null
+          source_page?: string | null
+          user_id?:    string | null
+        }
+        Update: {
+          clinic_id?:  string
+          created_at?: string
+          event?:      string
+          gate_state?: string | null
+          id?:         string
+          metadata?:   Json | null
+          operation?:  string | null
+          resource?:   string | null
+          source_page?: string | null
+          user_id?:    string | null
+        }
+        Relationships: [
+          { foreignKeyName: 'gating_events_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] }
+        ]
+      }
       reactivation_campaigns: {
         Row: {
           clinic_id: string

@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { usePlanStatus } from '@/context/plan-status'
 import { UpgradeModal } from './upgrade-modal'
+import { trackGatingEvent } from '@/app/actions/analytics'
 import type { GateResult } from '@/lib/plans/gating'
 
 export type GatedResource = 'leads' | 'appointments' | 'users'
@@ -22,23 +24,34 @@ function shouldBlock(gate: GateResult, operation: GatedOperation): boolean {
 }
 
 /**
- * Generic gate wrapper for arbitrary content (tables, inline actions, etc.).
- * For link buttons, prefer GatedActionButton — it renders richer visual states.
+ * Generic gate wrapper for arbitrary content (table actions, inline buttons, etc.).
+ * For primary link buttons, prefer GatedActionButton — it has richer visual states.
  */
 export function RouteGate({ resource, operation = 'create', children }: RouteGateProps) {
   const { usage } = usePlanStatus()
   const gate = usage[resource].result
   const blocked = shouldBlock(gate, operation)
   const [showModal, setShowModal] = useState(false)
+  const pathname = usePathname()
 
   if (!blocked) return <>{children}</>
 
+  function handleClick() {
+    void trackGatingEvent({
+      event:       'blocked_action_attempted',
+      resource,
+      gate_state:  gate as 'soft_blocked' | 'hard_blocked',
+      operation,
+      source_page: pathname,
+    })
+    setShowModal(true)
+  }
+
   return (
     <>
-      {/* Outer div captures clicks; inner suppresses pointer events on children */}
       <div
-        onClick={() => setShowModal(true)}
-        onKeyDown={(e) => e.key === 'Enter' && setShowModal(true)}
+        onClick={handleClick}
+        onKeyDown={(e) => e.key === 'Enter' && handleClick()}
         className="inline-block cursor-not-allowed"
         role="button"
         tabIndex={0}

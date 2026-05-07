@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { usePlanStatus } from '@/context/plan-status'
 import { LinkButton } from '@/components/ui/button'
 import { UpgradeModal } from './upgrade-modal'
+import { trackGatingEvent } from '@/app/actions/analytics'
 import type { GatedResource, GatedOperation } from './route-gate'
 import type { ReactNode } from 'react'
 
@@ -18,11 +20,10 @@ interface GatedActionButtonProps {
 function shouldBlock(gate: string, operation: GatedOperation): boolean {
   if (gate === 'allowed') return false
   if (gate === 'hard_blocked') return true
-  // soft_blocked only blocks creation, not editing existing records
   return operation === 'create'
 }
 
-// Match LinkButton's size classes for consistent layout
+// Match LinkButton's size classes exactly to avoid layout shift
 const SIZE_CLASSES: Record<'sm' | 'md', string> = {
   sm: 'text-xs px-3 py-1.5',
   md: 'text-sm px-4 py-2',
@@ -39,6 +40,7 @@ export function GatedActionButton({
   const gate = usage[resource].result
   const blocked = shouldBlock(gate, operation)
   const [showModal, setShowModal] = useState(false)
+  const pathname = usePathname()
 
   // allowed — plain link, no interception
   if (!blocked) {
@@ -48,11 +50,22 @@ export function GatedActionButton({
   const isSoft = gate === 'soft_blocked'
   const base = `inline-flex items-center gap-1.5 font-medium rounded-lg transition-colors ${SIZE_CLASSES[size]}`
 
+  function handleClick() {
+    void trackGatingEvent({
+      event:       'blocked_action_attempted',
+      resource,
+      gate_state:  gate as 'soft_blocked' | 'hard_blocked',
+      operation,
+      source_page: pathname,
+    })
+    setShowModal(true)
+  }
+
   return (
     <>
       <button
         type="button"
-        onClick={() => setShowModal(true)}
+        onClick={handleClick}
         title={isSoft ? 'Cerca del límite — actualiza tu plan' : 'Límite alcanzado — solo lectura'}
         className={
           isSoft
