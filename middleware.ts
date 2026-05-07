@@ -33,6 +33,12 @@ export async function middleware(request: NextRequest) {
   const isPublic = pathname.startsWith('/login') || pathname.startsWith('/auth/')
   const isProtected =
     pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/leads') ||
+    pathname.startsWith('/patients') ||
+    pathname.startsWith('/appointments') ||
+    pathname.startsWith('/billing') ||
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/blocked') ||
     pathname.startsWith('/clinic-selector') ||
     pathname === '/'
 

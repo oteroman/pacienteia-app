@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { redirect } from 'next/navigation'
+import { getOnboardingProgress } from '@/lib/plans/onboarding'
+import { OnboardingChecklist } from '@/components/plan/onboarding-checklist'
 import type { MetricsDaily, Patient } from '@/types/database'
 
 interface AppointmentRow {
@@ -18,8 +20,9 @@ export default async function DashboardPage() {
 
   const today = new Date().toISOString().split('T')[0]
 
-  // Fetch today's metrics, patients count, and upcoming appointments in parallel
-  const [metricsRes, patientsRes, appointmentsRes] = await Promise.all([
+  // Fetch onboarding progress + dashboard data in parallel
+  const [onboarding, metricsRes, patientsRes, appointmentsRes] = await Promise.all([
+    getOnboardingProgress(clinicId),
     supabase
       .from('metrics_daily')
       .select('*')
@@ -75,6 +78,9 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">Resumen operacional</h1>
         <p className="text-sm text-gray-500 mt-1">{formatDate(today)}</p>
       </div>
+
+      {/* Onboarding checklist — auto-hides when all steps done or skipped */}
+      <OnboardingChecklist progress={onboarding} />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

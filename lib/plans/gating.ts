@@ -168,6 +168,41 @@ export interface ClinicPlanStatus {
   trialDaysLeft: number
 }
 
+/** Pure computation — pass a pre-fetched ClinicSubscription to avoid an extra DB call. */
+export function computePlanStatus(
+  sub: ClinicSubscription | null,
+  currentUsage: { leads: number; appointments: number; users: number }
+): ClinicPlanStatus {
+  const fallback: ClinicSubscription = {
+    plan: 'trial', status: 'trialing', trial_ends_at: null, current_period_end: null,
+  }
+  const resolved = sub ?? fallback
+  const active = isSubscriptionActive(resolved)
+  const limits = active ? PLAN_CONFIG[resolved.plan] : PLAN_CONFIG.trial
+
+  function gate(resource: UsageResource, count: number): UsageGateResult {
+    if (!active) return { result: 'hard_blocked', used: count, limit: 0, pct: 100 }
+    const limit = getLimitForResource(limits, resource)
+    if (limit === UNLIMITED) return { result: 'allowed', used: count, limit: UNLIMITED, pct: 0 }
+    const pct = Math.min(100, Math.round((count / limit) * 100))
+    if (count >= limit) return { result: 'hard_blocked', used: count, limit, pct: 100 }
+    if (count >= Math.floor(limit * SOFT_BLOCK_THRESHOLD)) return { result: 'soft_blocked', used: count, limit, pct }
+    return { result: 'allowed', used: count, limit, pct }
+  }
+
+  return {
+    sub: resolved,
+    limits,
+    usage: {
+      leads:        gate('leads',        currentUsage.leads),
+      appointments: gate('appointments', currentUsage.appointments),
+      users:        gate('users',        currentUsage.users),
+    },
+    isActive: active,
+    trialDaysLeft: trialDaysRemaining(resolved),
+  }
+}
+
 export async function getClinicPlanStatus(
   clinicId: string,
   currentUsage: { leads: number; appointments: number; users: number }
