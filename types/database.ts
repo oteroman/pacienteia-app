@@ -92,47 +92,100 @@ export type Database = {
       clinics: {
         Row: {
           address: string | null
+          billing_email: string | null
           city: string
           country: string
           created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
           deleted_at: string | null
           id: string
           logo_url: string | null
           name: string
           phone: string | null
+          plan: 'trial' | 'basic' | 'pro' | 'premium'
           settings: Json
           slug: string
+          subscription_status: 'trialing' | 'active' | 'overdue' | 'cancelled'
+          ticket_avg: number
+          trial_ends_at: string
           updated_at: string
         }
         Insert: {
           address?: string | null
+          billing_email?: string | null
           city?: string
           country?: string
           created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
           deleted_at?: string | null
           id?: string
           logo_url?: string | null
           name: string
           phone?: string | null
+          plan?: 'trial' | 'basic' | 'pro' | 'premium'
           settings?: Json
           slug: string
+          subscription_status?: 'trialing' | 'active' | 'overdue' | 'cancelled'
+          ticket_avg?: number
+          trial_ends_at?: string
           updated_at?: string
         }
         Update: {
           address?: string | null
+          billing_email?: string | null
           city?: string
           country?: string
           created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
           deleted_at?: string | null
           id?: string
           logo_url?: string | null
           name?: string
           phone?: string | null
+          plan?: 'trial' | 'basic' | 'pro' | 'premium'
           settings?: Json
           slug?: string
+          subscription_status?: 'trialing' | 'active' | 'overdue' | 'cancelled'
+          ticket_avg?: number
+          trial_ends_at?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      subscription_usage: {
+        Row: {
+          active_users: number
+          appointments_count: number
+          clinic_id: string
+          id: string
+          leads_count: number
+          period_start: string
+          updated_at: string
+        }
+        Insert: {
+          active_users?: number
+          appointments_count?: number
+          clinic_id: string
+          id?: string
+          leads_count?: number
+          period_start: string
+          updated_at?: string
+        }
+        Update: {
+          active_users?: number
+          appointments_count?: number
+          clinic_id?: string
+          id?: string
+          leads_count?: number
+          period_start?: string
+          updated_at?: string
+        }
+        Relationships: [
+          { foreignKeyName: 'subscription_usage_clinic_id_fkey'; columns: ['clinic_id']; referencedRelation: 'clinics'; referencedColumns: ['id'] }
+        ]
       }
       lead_events: {
         Row: {
@@ -371,13 +424,17 @@ export type ClinicMember  = Tables<'clinic_members'>
 export type Profile       = Tables<'profiles'>
 export type Patient       = Tables<'patients'>
 export type Appointment   = Tables<'appointments'>
-export type LeadEvent     = Tables<'lead_events'>
-export type WorkflowRun   = Tables<'workflow_runs'>
-export type MetricsDaily  = Tables<'metrics_daily'>
+export type LeadEvent          = Tables<'lead_events'>
+export type WorkflowRun        = Tables<'workflow_runs'>
+export type MetricsDaily       = Tables<'metrics_daily'>
+export type SubscriptionUsageRow = Tables<'subscription_usage'>
 
 export type ClinicRole = 'owner' | 'admin' | 'staff'
 export type PatientStatus = 'active' | 'inactive' | 'lead' | 'blocked'
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
 export type WorkflowStatus = 'pending' | 'running' | 'success' | 'failed'
+export type Plan = 'trial' | 'basic' | 'pro' | 'premium'
+export type SubscriptionStatus = 'trialing' | 'active' | 'overdue' | 'cancelled'
+export type SubscriptionUsage = Tables<'subscription_usage'>
 
 export type ClinicWithRole = Clinic & { role: ClinicRole }
