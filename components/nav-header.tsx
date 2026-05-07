@@ -15,6 +15,7 @@ const NAV = [
   { label: 'Pacientes',  href: '/patients' },
   { label: 'Citas',      href: '/appointments' },
   { label: 'Leads',      href: '/leads' },
+  { label: 'Mi plan',    href: '/billing' },
 ]
 
 export function NavHeader({ user }: NavHeaderProps) {
