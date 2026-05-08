@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { setActiveClinicId } from '@/lib/tenant/active-clinic'
 import type { Clinic, ClinicRole } from '@/types/database'
 
@@ -20,6 +21,11 @@ export default async function ClinicSelectorPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  // Platform admins never land here — send them to their console
+  const sb = createAdminClient() as any
+  const { data: profile } = await sb.from('profiles').select('platform_role').eq('id', user.id).single()
+  if (profile?.platform_role) redirect('/platform')
 
   const { data: rawMemberships } = await supabase
     .from('clinic_members')
