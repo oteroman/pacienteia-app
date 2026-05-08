@@ -19,6 +19,13 @@ export async function getPlatformUser(): Promise<PlatformUser | null> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Primary: read from app_metadata in the JWT (set by service role, no DB call)
+  const roleFromJwt = user.app_metadata?.platform_role as PlatformRole | undefined
+  if (roleFromJwt) {
+    return { id: user.id, email: user.email ?? '', platform_role: roleFromJwt }
+  }
+
+  // Fallback: check profiles table (covers users migrated before app_metadata was set)
   const sb = createAdminClient() as any
   const { data: profile } = await sb
     .from('profiles')
