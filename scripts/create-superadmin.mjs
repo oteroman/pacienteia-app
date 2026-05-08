@@ -29,10 +29,11 @@ async function run() {
       password:      ADMIN_PASSWORD,
       email_confirm: true,
       user_metadata: { full_name: ADMIN_NAME },
+      app_metadata:  { platform_role: 'superadmin' },
     })
     if (error) { console.error('  ERROR:', error.message); process.exit(1) }
     adminId = existing.id
-    console.log('  ✓ Password updated')
+    console.log('  ✓ Password updated + app_metadata.platform_role = superadmin')
   } else {
     console.log(`Creating user ${ADMIN_EMAIL}...`)
     const { data, error } = await sb.auth.admin.createUser({
@@ -40,6 +41,7 @@ async function run() {
       password:      ADMIN_PASSWORD,
       email_confirm: true,
       user_metadata: { full_name: ADMIN_NAME },
+      app_metadata:  { platform_role: 'superadmin' },
     })
     if (error) { console.error('  ERROR:', error.message); process.exit(1) }
     adminId = data.user.id

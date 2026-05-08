@@ -30,6 +30,21 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Platform admins (platform_role in app_metadata JWT) must always go to /platform
+  // unless they're already there, logging out, or in impersonation mode
+  const isPlatformAdmin = !!(user?.app_metadata?.platform_role)
+  const isImpersonating = !!request.cookies.get('pa_impersonate')?.value
+
+  if (isPlatformAdmin && !isImpersonating) {
+    const onPlatform = pathname.startsWith('/platform')
+    const onAuth    = pathname.startsWith('/login') || pathname.startsWith('/auth/')
+    const onAnalytics = pathname.startsWith('/analytics')
+    // Let platform admins through to /platform, /analytics/admin, and auth routes
+    if (!onPlatform && !onAuth && !onAnalytics) {
+      return NextResponse.redirect(new URL('/platform', request.url))
+    }
+  }
+
   const isPublic = pathname.startsWith('/login') || pathname.startsWith('/auth/')
   const isProtected =
     pathname.startsWith('/dashboard') ||
@@ -40,6 +55,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/settings') ||
     pathname.startsWith('/analytics') ||
     pathname.startsWith('/blocked') ||
+    pathname.startsWith('/platform') ||
     pathname.startsWith('/clinic-selector') ||
     pathname === '/'
 
@@ -47,8 +63,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && pathname.startsWith('/login')) {
+  if (user && !isPlatformAdmin && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  if (user && isPlatformAdmin && pathname.startsWith('/login')) {
+    return NextResponse.redirect(new URL('/platform', request.url))
   }
 
   return response
