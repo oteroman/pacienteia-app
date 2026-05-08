@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { unstable_noStore as noStore } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { extendTrial } from '@/app/actions/platform'
 
@@ -12,6 +13,7 @@ interface ClinicSummary {
 }
 
 async function getPlatformOverview() {
+  noStore()
   const sb = createAdminClient() as any
 
   const { data: clinics } = await sb

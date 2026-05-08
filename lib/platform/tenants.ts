@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export interface TenantRow {
@@ -19,6 +20,7 @@ export interface TenantDetail extends TenantRow {
 }
 
 export async function fetchAllTenants(): Promise<TenantRow[]> {
+  noStore()
   const sb = createAdminClient() as any
 
   const { data: clinics } = await sb
@@ -58,6 +60,7 @@ export async function fetchAllTenants(): Promise<TenantRow[]> {
 }
 
 export async function fetchTenantDetail(clinicId: string): Promise<TenantDetail | null> {
+  noStore()
   const sb = createAdminClient() as any
 
   const { data: clinic } = await sb
