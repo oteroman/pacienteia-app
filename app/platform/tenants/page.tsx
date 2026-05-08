@@ -38,12 +38,12 @@ export default async function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Tenants</h1>
           <p className="text-sm text-gray-400 mt-0.5">Clínicas registradas en la plataforma</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <Stat label="Activas"    value={active}    color="text-green-400" />
           <Stat label="Trial"      value={trialing}  color="text-blue-400"  />
           <Stat label="Canceladas" value={cancelled} color="text-red-400"   />
@@ -51,44 +51,46 @@ export default async function TenantsPage() {
       </div>
 
       <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-800 text-left">
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Clínica</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Estado</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Plan</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Miembros</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Última actividad</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Registrada</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {tenants.map((t) => (
-              <tr key={t.id} className="hover:bg-gray-800/50 transition-colors">
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.slug}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={statusBadge(t.subscription_status)}>{t.subscription_status ?? '—'}</span>
-                </td>
-                <td className="px-4 py-3 text-gray-300">{planLabel(t.plan)}</td>
-                <td className="px-4 py-3 text-gray-300 tabular-nums">{t.memberCount}</td>
-                <td className="px-4 py-3 text-gray-400">{relativeDate(t.lastActivity)}</td>
-                <td className="px-4 py-3 text-gray-400">{relativeDate(t.created_at)}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/platform/tenants/${t.id}`}
-                    className="text-xs font-semibold text-brand-400 hover:text-brand-300 transition-colors"
-                  >
-                    Ver →
-                  </Link>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr className="border-b border-gray-800 text-left">
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Clínica</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Estado</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Plan</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden sm:table-cell">Miembros</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden lg:table-cell">Última actividad</th>
+                <th className="px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide hidden lg:table-cell">Registrada</th>
+                <th className="px-4 py-3"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {tenants.map((t) => (
+                <tr key={t.id} className="hover:bg-gray-800/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-white">{t.name}</p>
+                    <p className="text-xs text-gray-500">{t.slug}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={statusBadge(t.subscription_status)}>{t.subscription_status ?? '—'}</span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-300 hidden sm:table-cell">{planLabel(t.plan)}</td>
+                  <td className="px-4 py-3 text-gray-300 tabular-nums hidden sm:table-cell">{t.memberCount}</td>
+                  <td className="px-4 py-3 text-gray-400 hidden lg:table-cell">{relativeDate(t.lastActivity)}</td>
+                  <td className="px-4 py-3 text-gray-400 hidden lg:table-cell">{relativeDate(t.created_at)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/platform/tenants/${t.id}`}
+                      className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors whitespace-nowrap"
+                    >
+                      Ver →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {tenants.length === 0 && (
           <div className="px-4 py-12 text-center text-gray-500 text-sm">Sin tenants registrados.</div>
         )}
