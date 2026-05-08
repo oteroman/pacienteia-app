@@ -84,6 +84,8 @@ export async function enterTenant(clinicId: string, clinicName: string, _fd: For
   await setImpersonatedClinicId(clinicId)
   await setActiveClinicId(clinicId)
   await logPlatformAction(pu.id, pu.email, 'enter_tenant', clinicId, clinicName, {})
+  revalidatePath('/dashboard')
+  revalidatePath('/platform')
   redirect('/dashboard')
 }
 
