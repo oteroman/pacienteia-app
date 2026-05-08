@@ -46,7 +46,7 @@ export async function getOnboardingProgress(organizationId: string): Promise<Onb
       label: 'Completa el perfil de tu organización',
       description: 'Agrega logo, descripción y datos de contacto.',
       done: hasProfile,
-      href: '/settings',
+      href: '/settings/clinic',
     },
     {
       id: 'patient',
