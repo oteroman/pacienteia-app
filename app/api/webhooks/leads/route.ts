@@ -21,7 +21,7 @@ function isAuthorized(req: NextRequest): boolean {
 
 // POST /api/webhooks/leads
 // Called by n8n (or any external integration) when a lead message arrives.
-// clinic_id can be the UUID or the clinic slug.
+// clinic_id (or org_id) can be the UUID or the org slug.
 // source maps to IntakeChannel; defaults to 'whatsapp'.
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
@@ -35,8 +35,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const { clinic_id, source, phone, message, name, email } = body as {
+  const { clinic_id, org_id, source, phone, message, name, email } = body as {
     clinic_id?: string
+    org_id?:    string
     source?:    string
     phone?:     string
     message?:   string
@@ -44,35 +45,47 @@ export async function POST(req: NextRequest) {
     email?:     string
   }
 
-  if (!clinic_id || !message?.trim()) {
-    return NextResponse.json({ error: 'clinic_id and message are required' }, { status: 400 })
+  const orgParam = org_id ?? clinic_id
+  if (!orgParam || !message?.trim()) {
+    return NextResponse.json({ error: 'org_id and message are required' }, { status: 400 })
   }
 
-  // Resolve clinic by UUID or slug
+  // Resolve org by UUID or slug
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  const isUUID = uuidPattern.test(clinic_id)
+  const isUUID = uuidPattern.test(orgParam)
 
-  const { data: clinic } = await sb
-    .from('clinics')
+  const { data: org } = await sb
+    .from('organizations')
     .select('id')
-    .eq(isUUID ? 'id' : 'slug', clinic_id)
+    .eq(isUUID ? 'id' : 'slug', orgParam)
     .single()
 
-  if (!clinic) {
-    return NextResponse.json({ error: 'clinic_not_found' }, { status: 404 })
+  if (!org) {
+    return NextResponse.json({ error: 'org_not_found' }, { status: 404 })
   }
+
+  // Get default branch
+  const { data: branch } = await sb
+    .from('branches')
+    .select('id')
+    .eq('organization_id', org.id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single()
 
   const channel: IntakeChannel = CHANNEL_MAP[source ?? ''] ?? 'whatsapp'
 
   const intakeId = await processIntake({
-    clinicId:     clinic.id as string,
+    organizationId: org.id as string,
+    branchId:       branch?.id ?? org.id,
     channel,
-    contactPhone: phone   || undefined,
-    contactName:  name    || undefined,
-    contactEmail: email   || undefined,
-    rawContent:   message.trim(),
+    contactPhone:   phone   || undefined,
+    contactName:    name    || undefined,
+    contactEmail:   email   || undefined,
+    rawContent:     message.trim(),
   })
 
   if (!intakeId) {

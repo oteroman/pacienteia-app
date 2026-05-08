@@ -99,33 +99,33 @@ async function queryKPIs(sb: any, clinicId: string, period: KPIPeriod): Promise<
   const [apptRes, slotRes, rebookRes, intakeRes, slaRes] = await Promise.all([
     sb.from('appointments')
       .select('status, price')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .gte('created_at', start)
       .lte('created_at', end)
       .is('deleted_at', null),
 
     sb.from('slot_openings')
       .select('status')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .gte('created_at', start)
       .lte('created_at', end),
 
     sb.from('appointment_rebooking')
       .select('outcome')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .gte('created_at', start)
       .lte('created_at', end),
 
     sb.from('intakes')
       .select('status')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .gte('created_at', start)
       .lte('created_at', end),
 
     // SLA: intakes that have both first_response_at and sla_due_at
     sb.from('intakes')
       .select('first_response_at, sla_due_at')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .not('first_response_at', 'is', null)
       .not('sla_due_at', 'is', null)
       .gte('created_at', start)
@@ -238,7 +238,7 @@ export async function fetchAllClinicsPerformance(
   const period = buildPeriod(periodKey)
   const { start, end } = period
 
-  const { data: clinics } = await sb.from('clinics').select('id, name')
+  const { data: clinics } = await sb.from('organizations').select('id, name')
   if (!clinics?.length) return []
 
   const rows = await Promise.all(

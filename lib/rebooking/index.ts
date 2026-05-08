@@ -7,7 +7,7 @@ export type RebookChannel = 'whatsapp' | 'task' | 'internal'
 
 export interface RebookingRecord {
   id:                string
-  clinicId:          string
+  organizationId:    string
   appointmentId:     string
   patientId:         string | null
   triggerType:       RebookTrigger
@@ -75,11 +75,12 @@ export function buildRebookMessage(
 
 // ── Core trigger function (called from webhooks + cron) ───────
 export interface TriggerRebookingInput {
-  clinicId:      string
-  appointmentId: string
-  patientId:     string | null
-  patientName:   string
-  patientPhone:  string | null
+  organizationId: string
+  branchId?:      string
+  appointmentId:  string
+  patientId:      string | null
+  patientName:    string
+  patientPhone:   string | null
   treatmentType: string
   scheduledAt:   string
   triggerType:   RebookTrigger
@@ -93,34 +94,25 @@ export async function triggerRebooking(input: TriggerRebookingInput): Promise<st
 
   const whatsappMessage = buildRebookMessage(input.patientName, input.treatmentType, input.scheduledAt)
 
-  // Create synthetic interaction for copilot_tasks FK requirement
-  const { data: interaction } = await sb.from('interactions').insert({
-    clinic_id:   input.clinicId,
-    source_type: 'staff_note',
-    raw_content: `[Rebooking] ${input.triggerType} — ${input.patientName} — ${input.treatmentType}`,
-    status:      'done',
-  }).select('id').single()
+  const taskTitle = input.triggerType === 'no_response'
+    ? `Sin respuesta: contactar a ${input.patientName} — ${input.treatmentType}`
+    : `Reagendar: ${input.patientName} — ${input.treatmentType}`
 
   let staffTaskId: string | null = null
-  if (interaction) {
-    const taskTitle = input.triggerType === 'no_response'
-      ? `Sin respuesta: contactar a ${input.patientName} — ${input.treatmentType}`
-      : `Reagendar: ${input.patientName} — ${input.treatmentType}`
-
+  if (input.branchId) {
     const { data: task } = await sb.from('copilot_tasks').insert({
-      interaction_id: interaction.id,
-      clinic_id:      input.clinicId,
-      patient_id:     input.patientId,
-      title:          taskTitle,
-      description:    `Motivo: ${input.rebookReason ?? input.triggerType}. Teléfono: ${input.patientPhone ?? 'no registrado'}`,
-      priority:       'medium',
+      organization_id: input.organizationId,
+      branch_id:       input.branchId,
+      patient_id:      input.patientId,
+      title:           taskTitle,
+      description:     `Motivo: ${input.rebookReason ?? input.triggerType}. Teléfono: ${input.patientPhone ?? 'no registrado'}`,
+      priority:        'medium',
     }).select('id').single()
-
     staffTaskId = task?.id ?? null
   }
 
   const { data: record, error } = await sb.from('appointment_rebooking').insert({
-    clinic_id:       input.clinicId,
+    organization_id: input.organizationId,
     appointment_id:  input.appointmentId,
     patient_id:      input.patientId,
     trigger_type:    input.triggerType,
@@ -150,7 +142,7 @@ export async function fetchRebookingDashboard(clinicId: string): Promise<Rebooki
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
 
   const selectRebooking = `
-    id, clinic_id, appointment_id, patient_id, trigger_type, previous_status,
+    id, organization_id, appointment_id, patient_id, trigger_type, previous_status,
     rebook_reason, channel, outcome, staff_task_id, new_appointment_id,
     whatsapp_message, patient_response, resolved_at, notes, created_at,
     appointments ( scheduled_at, treatment_type ),
@@ -160,14 +152,14 @@ export async function fetchRebookingDashboard(clinicId: string): Promise<Rebooki
   const [allPending, resolved, freed] = await Promise.all([
     sb.from('appointment_rebooking')
       .select(selectRebooking)
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .eq('outcome', 'pending')
       .order('created_at', { ascending: false })
       .limit(50),
 
     sb.from('appointment_rebooking')
       .select(selectRebooking)
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .neq('outcome', 'pending')
       .gte('resolved_at', todayStart)
       .order('resolved_at', { ascending: false })
@@ -176,7 +168,7 @@ export async function fetchRebookingDashboard(clinicId: string): Promise<Rebooki
     // Slots freed: appointments cancelled today, no rebooking yet resolved
     sb.from('appointments')
       .select('id, scheduled_at, treatment_type, patients ( full_name )')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .eq('status', 'cancelled')
       .gte('updated_at', todayStart)
       .gte('scheduled_at', now.toISOString())  // still upcoming
@@ -186,7 +178,7 @@ export async function fetchRebookingDashboard(clinicId: string): Promise<Rebooki
   ])
 
   type RawRow = {
-    id: string; clinic_id: string; appointment_id: string; patient_id: string | null
+    id: string; organization_id: string; appointment_id: string; patient_id: string | null
     trigger_type: string; previous_status: string; rebook_reason: string | null
     channel: string; outcome: string; staff_task_id: string | null
     new_appointment_id: string | null; whatsapp_message: string | null
@@ -198,7 +190,7 @@ export async function fetchRebookingDashboard(clinicId: string): Promise<Rebooki
 
   const toRecord = (r: RawRow): RebookingRecord => ({
     id:               r.id,
-    clinicId:         r.clinic_id,
+    organizationId:   r.organization_id,
     appointmentId:    r.appointment_id,
     patientId:        r.patient_id,
     triggerType:      r.trigger_type as RebookTrigger,
@@ -265,5 +257,5 @@ export async function resolveRebooking(
     .from('appointment_rebooking')
     .update({ outcome, notes: notes ?? null, resolved_at: new Date().toISOString() })
     .eq('id', rebookingId)
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
 }

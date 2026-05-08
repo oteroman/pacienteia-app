@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Clinic } from '@/types/database'
 
 export interface OnboardingStep {
   id: string
@@ -16,38 +15,37 @@ export interface OnboardingProgress {
   allDone: boolean
 }
 
-export async function getOnboardingProgress(clinicId: string): Promise<OnboardingProgress> {
+export async function getOnboardingProgress(organizationId: string): Promise<OnboardingProgress> {
   const supabase = await createClient()
 
-  const [clinicRes, patientsRes, reactivationRes, feedbackRes] = await Promise.all([
-    supabase.from('clinics').select('*').eq('id', clinicId).single(),
+  const [profileRes, patientsRes, whatsappRes] = await Promise.all([
+    supabase
+      .from('organization_profiles')
+      .select('organization_id')
+      .eq('organization_id', organizationId)
+      .single(),
     supabase
       .from('patients')
       .select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId)
-      .neq('status', 'lead')
+      .eq('organization_id', organizationId)
       .is('deleted_at', null),
     supabase
-      .from('reactivation_campaigns')
+      .from('branch_whatsapp_config')
       .select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId),
-    supabase
-      .from('patient_feedback')
-      .select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId),
+      .eq('organization_id', organizationId)
+      .eq('status', 'active'),
   ])
 
-  const clinic = clinicRes.data as Clinic | null
-  const profileComplete = Boolean(clinic?.phone && clinic?.address)
-  const hasPatient = (patientsRes.count ?? 0) > 0
-  const hasAutomation = (reactivationRes.count ?? 0) > 0 || (feedbackRes.count ?? 0) > 0
+  const hasProfile  = !!profileRes.data
+  const hasPatient  = (patientsRes.count ?? 0) > 0
+  const hasWhatsapp = (whatsappRes.count ?? 0) > 0
 
   const steps: OnboardingStep[] = [
     {
       id: 'profile',
-      label: 'Completa el perfil de tu clínica',
-      description: 'Agrega dirección y teléfono para que tus pacientes te encuentren.',
-      done: profileComplete,
+      label: 'Completa el perfil de tu organización',
+      description: 'Agrega logo, descripción y datos de contacto.',
+      done: hasProfile,
       href: '/settings',
     },
     {
@@ -58,11 +56,11 @@ export async function getOnboardingProgress(clinicId: string): Promise<Onboardin
       href: '/patients/new',
     },
     {
-      id: 'automation',
-      label: 'Activa tu primera automatización',
-      description: 'Conecta n8n y activa el Escudo de Reputación o Reactivación Pro.',
-      done: hasAutomation,
-      href: '/billing',
+      id: 'whatsapp',
+      label: 'Conecta WhatsApp',
+      description: 'Vincula el número de WhatsApp Business de tu sucursal.',
+      done: hasWhatsapp,
+      href: '/settings/whatsapp',
     },
   ]
 

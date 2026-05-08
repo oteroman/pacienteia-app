@@ -18,7 +18,7 @@ export type IntakeStatus   =
 
 export interface Intake {
   id:                 string
-  clinicId:           string
+  organizationId:     string
   sourceChannel:      IntakeChannel
   externalId:         string | null
   contactName:        string | null
@@ -107,7 +107,7 @@ export const STATUS_COLOR: Record<IntakeStatus, string> = {
 
 // ── DB row type ───────────────────────────────────────────────
 type IntakeRow = {
-  id: string; clinic_id: string; source_channel: string; external_id: string | null
+  id: string; organization_id: string; source_channel: string; external_id: string | null
   contact_name: string | null; contact_phone: string | null; contact_email: string | null
   raw_content: string; normalized_summary: string | null; detected_intent: string | null
   priority: string; status: string; assigned_to: string | null; patient_id: string | null
@@ -120,7 +120,7 @@ type IntakeRow = {
 function toIntake(r: IntakeRow): Intake {
   return {
     id:                r.id,
-    clinicId:          r.clinic_id,
+    organizationId:    r.organization_id,
     sourceChannel:     r.source_channel as IntakeChannel,
     externalId:        r.external_id,
     contactName:       r.contact_name,
@@ -157,7 +157,7 @@ export async function fetchInbox(clinicId: string): Promise<Intake[]> {
   const { data } = await sb
     .from('intakes')
     .select('*')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .in('status', ACTIVE_STATUSES)
     .order('created_at', { ascending: false })
     .limit(100)
@@ -183,7 +183,7 @@ export async function fetchIntake(clinicId: string, intakeId: string): Promise<I
   const { data } = await sb
     .from('intakes')
     .select('*')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .eq('id', intakeId)
     .single()
 
@@ -197,7 +197,7 @@ export async function fetchRecentResolved(clinicId: string): Promise<Intake[]> {
   const { data } = await sb
     .from('intakes')
     .select('*')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .in('status', ['resolved', 'dismissed'])
     .order('updated_at', { ascending: false })
     .limit(20)

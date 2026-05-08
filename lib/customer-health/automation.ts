@@ -32,7 +32,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: snoozed } = await (supabase as any)
     .from('clinic_tasks')
-    .select('id, clinic_id, status')
+    .select('id, organization_id, status')
     .eq('status', 'snoozed')
     .lte('snoozed_until', now.toISOString())
 
@@ -43,7 +43,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
       .eq('id', task.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('clinic_task_audit').insert({
-      task_id: task.id, clinic_id: task.clinic_id,
+      task_id: task.id, organization_id: task.organization_id,
       action_type: 'reopened', prev_status: 'snoozed', new_status: 'open',
       actor: 'system', metadata: { reason: 'snooze_expired' },
     })
@@ -55,7 +55,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: toEscalate } = await (supabase as any)
     .from('clinic_tasks')
-    .select('id, clinic_id')
+    .select('id, organization_id')
     .eq('status', 'open')
     .eq('priority', 'medium')
     .is('escalated_at', null)
@@ -68,7 +68,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
       .eq('id', task.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('clinic_task_audit').insert({
-      task_id: task.id, clinic_id: task.clinic_id,
+      task_id: task.id, organization_id: task.organization_id,
       action_type: 'escalated', prev_priority: 'medium', new_priority: 'high',
       actor: 'system', metadata: { hours_open: ESCALATE_AFTER_H },
     })
@@ -80,7 +80,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: toRemind } = await (supabase as any)
     .from('clinic_tasks')
-    .select('id, clinic_id, title, trigger_type, health_score')
+    .select('id, organization_id, title, trigger_type, health_score')
     .eq('status', 'open')
     .is('reminder_sent_at', null)
     .lte('created_at', remindThreshold)
@@ -92,7 +92,7 @@ export async function runTaskAutomation(): Promise<AutomationResult> {
       .eq('id', task.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('clinic_task_audit').insert({
-      task_id: task.id, clinic_id: task.clinic_id,
+      task_id: task.id, organization_id: task.organization_id,
       action_type: 'reminded', actor: 'system',
       metadata: { hours_open: REMIND_AFTER_H, trigger: task.trigger_type },
     })

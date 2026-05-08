@@ -4,10 +4,10 @@ import type { Plan } from '@/lib/plans/config'
 
 // ── Raw types from DB ────────────────────────────────────────
 type ClinicRow  = { id: string; name: string; plan: string; subscription_status: string }
-type UsageRow   = { clinic_id: string; leads_count: number; appointments_count: number }
-type ApptRow    = { clinic_id: string; status: string; scheduled_at: string }
-type PatientRow = { clinic_id: string; created_at: string }
-type GatingRow  = { clinic_id: string; event: string; gate_state: string | null; created_at: string }
+type UsageRow   = { organization_id: string; leads_count: number; appointments_count: number }
+type ApptRow    = { organization_id: string; status: string; scheduled_at: string }
+type PatientRow = { organization_id: string; created_at: string }
+type GatingRow  = { organization_id: string; event: string; gate_state: string | null; created_at: string }
 
 // ── Public types ─────────────────────────────────────────────
 export type HealthStatus = 'healthy' | 'watch' | 'at_risk' | 'churned'
@@ -142,34 +142,34 @@ export async function fetchAllClinicHealth(): Promise<ClinicHealth[]> {
   const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 
   const [clinicsRes, usageRes, apptsRes, patientsRes, gatingRes] = await Promise.all([
-    supabase.from('clinics')
+    supabase.from('organizations')
       .select('id, name, plan, subscription_status')
       .neq('subscription_status', 'cancelled'),
 
     supabase.from('subscription_usage')
-      .select('clinic_id, leads_count, appointments_count')
+      .select('organization_id, leads_count, appointments_count')
       .eq('period_start', periodStart),
 
     // 30 days: enough for recency (30d window) and trend (split at 7 + 14)
     supabase.from('appointments')
-      .select('clinic_id, status, scheduled_at')
+      .select('organization_id, status, scheduled_at')
       .gte('scheduled_at', d(30)),
 
     // 14 days: this-week vs last-week patient growth
     supabase.from('patients')
-      .select('clinic_id, created_at')
+      .select('organization_id, created_at')
       .gte('created_at', d(14))
       .neq('status', 'lead'),
 
     // 7 days: friction is a short-window signal
     supabase.from('gating_events')
-      .select('clinic_id, event, gate_state, created_at')
+      .select('organization_id, event, gate_state, created_at')
       .gte('created_at', d(7)),
   ])
 
   const clinics  = (clinicsRes.data  ?? []) as unknown as ClinicRow[]
   const usageMap = new Map<string, UsageRow>(
-    ((usageRes.data ?? []) as unknown as UsageRow[]).map((u) => [u.clinic_id, u])
+    ((usageRes.data ?? []) as unknown as UsageRow[]).map((u) => [u.organization_id, u])
   )
   const allAppts    = (apptsRes.data    ?? []) as unknown as ApptRow[]
   const allPatients = (patientsRes.data ?? []) as unknown as PatientRow[]
@@ -180,9 +180,9 @@ export async function fetchAllClinicHealth(): Promise<ClinicHealth[]> {
 
   return clinics.map((clinic) => {
     const usage   = usageMap.get(clinic.id)
-    const appts   = allAppts.filter((a) => a.clinic_id === clinic.id)
-    const patients = allPatients.filter((p) => p.clinic_id === clinic.id)
-    const gating  = allGating.filter((g) => g.clinic_id === clinic.id)
+    const appts   = allAppts.filter((a) => a.organization_id === clinic.id)
+    const patients = allPatients.filter((p) => p.organization_id === clinic.id)
+    const gating  = allGating.filter((g) => g.organization_id === clinic.id)
 
     // Split appointments by time window
     const apptsThisWeek = appts.filter((a) => new Date(a.scheduled_at) >= sevenDaysAgo)

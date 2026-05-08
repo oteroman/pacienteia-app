@@ -33,25 +33,25 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  // Resolve clinic list
-  const clinicParam = req.nextUrl.searchParams.get('clinic_id')
-  let clinicIds: string[]
+  // Resolve org list
+  const orgParam = req.nextUrl.searchParams.get('clinic_id') ?? req.nextUrl.searchParams.get('org_id')
+  let orgIds: string[]
 
-  if (clinicParam) {
+  if (orgParam) {
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    const field = uuidPattern.test(clinicParam) ? 'id' : 'slug'
-    const { data: clinic } = await sb.from('clinics').select('id').eq(field, clinicParam).single()
-    if (!clinic) return NextResponse.json({ error: 'clinic_not_found' }, { status: 404 })
-    clinicIds = [clinic.id as string]
+    const field = uuidPattern.test(orgParam) ? 'id' : 'slug'
+    const { data: org } = await sb.from('organizations').select('id').eq(field, orgParam).single()
+    if (!org) return NextResponse.json({ error: 'org_not_found' }, { status: 404 })
+    orgIds = [org.id as string]
   } else {
-    const { data: clinics } = await sb.from('clinics').select('id')
-    clinicIds = ((clinics ?? []) as { id: string }[]).map((c) => c.id)
+    const { data: orgs } = await sb.from('organizations').select('id')
+    orgIds = ((orgs ?? []) as { id: string }[]).map((o) => o.id)
   }
 
-  // Run detection for each clinic (sequential to avoid DB overload)
+  // Run detection for each org (sequential to avoid DB overload)
   const results = []
-  for (const clinicId of clinicIds) {
-    const result = await detectGapsForClinic(clinicId)
+  for (const orgId of orgIds) {
+    const result = await detectGapsForClinic(orgId)
     results.push(result)
   }
 
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok:       true,
-    clinics:  clinicIds.length,
+    orgs:     orgIds.length,
     ...totals,
     ranAt:    new Date().toISOString(),
     details:  results,

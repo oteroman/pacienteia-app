@@ -17,7 +17,7 @@ interface PageProps {
 
 export default async function PatientsPage({ searchParams }: PageProps) {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const { q = '', status = '', page = '1', view = 'table' } = await searchParams
   const currentPage = Math.max(1, Number(page))
@@ -28,7 +28,7 @@ export default async function PatientsPage({ searchParams }: PageProps) {
   let query = supabase
     .from('patients')
     .select('*', { count: 'exact' })
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)

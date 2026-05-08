@@ -62,13 +62,13 @@ export interface ClinicValue {
 
 // ── Raw DB types ──────────────────────────────────────────────
 type ClinicRow  = { id: string; name: string; plan: string }
-type UsageRow   = { clinic_id: string; leads_count: number }
-type ApptRow    = { clinic_id: string; status: string; scheduled_at: string }
-type ApptStatusRow = { clinic_id: string; status: string }
-type GatingRow  = { clinic_id: string; created_at: string }
-type TaskRow    = { clinic_id: string; resolved_at: string | null }
-type PatientRow = { clinic_id: string }
-type ReactivatedRow = { clinic_id: string; reactivated_count: number }
+type UsageRow   = { organization_id: string; leads_count: number }
+type ApptRow    = { organization_id: string; status: string; scheduled_at: string }
+type ApptStatusRow = { organization_id: string; status: string }
+type GatingRow  = { organization_id: string; created_at: string }
+type TaskRow    = { organization_id: string; resolved_at: string | null }
+type PatientRow = { organization_id: string }
+type ReactivatedRow = { organization_id: string; reactivated_count: number }
 
 // ── Score helpers ─────────────────────────────────────────────
 function scoreLeads(leads30d: number, planLeadLimit: number): number {
@@ -151,21 +151,21 @@ export async function fetchAllClinicValue(): Promise<ClinicValue[]> {
     histTasksRes,   // tasks done: ALL time
     reactivatedRes, // RPC: real reactivation counts per clinic (30d window)
   ] = await Promise.all([
-    sb.from('clinics').select('id, name, plan').neq('subscription_status', 'cancelled'),
-    sb.from('subscription_usage').select('clinic_id, leads_count').eq('period_start', periodStart),
-    sb.from('appointments').select('clinic_id, status, scheduled_at').gte('scheduled_at', d(30)),
-    sb.from('gating_events').select('clinic_id, created_at').gte('created_at', d(30)),
-    sb.from('clinic_tasks').select('clinic_id, resolved_at').eq('status', 'done').gte('resolved_at', d(30)),
-    sb.from('subscription_usage').select('clinic_id, leads_count'),          // all periods
-    sb.from('appointments').select('clinic_id, status'),                      // all time
-    sb.from('patients').select('clinic_id').neq('status', 'lead'),            // all time
-    sb.from('clinic_tasks').select('clinic_id').eq('status', 'done'),         // all time
+    sb.from('organizations').select('id, name, plan').neq('subscription_status', 'cancelled'),
+    sb.from('subscription_usage').select('organization_id, leads_count').eq('period_start', periodStart),
+    sb.from('appointments').select('organization_id, status, scheduled_at').gte('scheduled_at', d(30)),
+    sb.from('gating_events').select('organization_id, created_at').gte('created_at', d(30)),
+    sb.from('clinic_tasks').select('organization_id, resolved_at').eq('status', 'done').gte('resolved_at', d(30)),
+    sb.from('subscription_usage').select('organization_id, leads_count'),          // all periods
+    sb.from('appointments').select('organization_id, status'),                      // all time
+    sb.from('patients').select('organization_id').neq('status', 'lead'),            // all time
+    sb.from('clinic_tasks').select('organization_id').eq('status', 'done'),         // all time
     sb.rpc('get_reactivated_patients_30d'),                                   // aggregated RPC
   ])
 
   const clinics  = (clinicsRes.data  ?? []) as ClinicRow[]
   const usageMap = new Map<string, number>(
-    ((usageRes.data ?? []) as UsageRow[]).map((u) => [u.clinic_id, u.leads_count])
+    ((usageRes.data ?? []) as UsageRow[]).map((u) => [u.organization_id, u.leads_count])
   )
   const allAppts30   = (apptsRes.data    ?? []) as ApptRow[]
   const allGating    = (gatingRes.data   ?? []) as GatingRow[]
@@ -174,39 +174,39 @@ export async function fetchAllClinicValue(): Promise<ClinicValue[]> {
   // Historical: pre-aggregate into Maps to avoid repeated full-array scans per clinic
   const histUsageMap = new Map<string, number>()
   for (const r of (histUsageRes.data ?? []) as UsageRow[]) {
-    histUsageMap.set(r.clinic_id, (histUsageMap.get(r.clinic_id) ?? 0) + r.leads_count)
+    histUsageMap.set(r.organization_id, (histUsageMap.get(r.organization_id) ?? 0) + r.leads_count)
   }
 
   type ApptCounts = { confirmed: number; noShow: number; total: number }
   const histApptsMap = new Map<string, ApptCounts>()
   for (const r of (histApptsRes.data ?? []) as ApptStatusRow[]) {
-    const curr = histApptsMap.get(r.clinic_id) ?? { confirmed: 0, noShow: 0, total: 0 }
+    const curr = histApptsMap.get(r.organization_id) ?? { confirmed: 0, noShow: 0, total: 0 }
     curr.total++
     if (r.status === 'confirmed' || r.status === 'completed') curr.confirmed++
     if (r.status === 'no_show') curr.noShow++
-    histApptsMap.set(r.clinic_id, curr)
+    histApptsMap.set(r.organization_id, curr)
   }
 
   const histPatientsMap = new Map<string, number>()
   for (const r of (histPatientsRes.data ?? []) as PatientRow[]) {
-    histPatientsMap.set(r.clinic_id, (histPatientsMap.get(r.clinic_id) ?? 0) + 1)
+    histPatientsMap.set(r.organization_id, (histPatientsMap.get(r.organization_id) ?? 0) + 1)
   }
 
   const histTasksMap = new Map<string, number>()
   for (const r of (histTasksRes.data ?? []) as PatientRow[]) {
-    histTasksMap.set(r.clinic_id, (histTasksMap.get(r.clinic_id) ?? 0) + 1)
+    histTasksMap.set(r.organization_id, (histTasksMap.get(r.organization_id) ?? 0) + 1)
   }
 
   const reactivatedMap = new Map<string, number>(
     ((reactivatedRes.data ?? []) as ReactivatedRow[])
-      .map((r) => [r.clinic_id, Number(r.reactivated_count)])
+      .map((r) => [r.organization_id, Number(r.reactivated_count)])
   )
 
   return clinics.map((clinic) => {
     // ── 30d rolling data ────────────────────────────────────
-    const appts30 = allAppts30.filter((a) => a.clinic_id === clinic.id)
-    const gating  = allGating.filter((g) => g.clinic_id === clinic.id)
-    const tasks30 = allTasks30.filter((t) => t.clinic_id === clinic.id)
+    const appts30 = allAppts30.filter((a) => a.organization_id === clinic.id)
+    const gating  = allGating.filter((g) => g.organization_id === clinic.id)
+    const tasks30 = allTasks30.filter((t) => t.organization_id === clinic.id)
 
     const appts7d = appts30.filter((a) => new Date(a.scheduled_at) >= sevenDaysAgo)
     const tasks7d = tasks30.filter((t) => t.resolved_at && new Date(t.resolved_at) >= sevenDaysAgo)

@@ -16,18 +16,18 @@ async function getPlatformOverview() {
   noStore()
   const sb = createAdminClient() as any
 
-  const { data: clinics } = await sb
-    .from('clinics')
+  const { data: orgs } = await sb
+    .from('organizations')
     .select('id, name, slug, plan, subscription_status, trial_ends_at')
     .order('created_at', { ascending: false })
 
   const { data: auditRows } = await sb
     .from('platform_audit_log')
-    .select('action_type, actor_email, clinic_name, created_at')
+    .select('action_type, actor_email, organization_name, created_at')
     .order('created_at', { ascending: false })
     .limit(8)
 
-  const all: ClinicSummary[] = clinics ?? []
+  const all: ClinicSummary[] = orgs ?? []
   const now = new Date()
   const in7days = new Date(now.getTime() + 7 * 86400000)
 
@@ -151,7 +151,7 @@ export default async function PlatformHome() {
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-200">
                       {ACTION_LABEL[a.action_type] ?? a.action_type}
-                      {a.clinic_name && <span className="font-normal text-gray-400"> · {a.clinic_name}</span>}
+                      {a.organization_name && <span className="font-normal text-gray-400"> · {a.organization_name}</span>}
                     </p>
                     <p className="text-[10px] text-gray-600">{a.actor_email}</p>
                   </div>

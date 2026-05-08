@@ -1,25 +1,22 @@
-import { cookies } from 'next/headers'
-
-const COOKIE_NAME = 'active_clinic_id'
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+/**
+ * Backwards-compatibility shim.
+ * All callers receive organization_id via getActiveClinicId();
+ * they will be migrated to getActiveContext() incrementally.
+ */
+import {
+  getActiveOrganizationId,
+  setActiveOrganizationId,
+  clearActiveContext,
+} from './context'
 
 export async function getActiveClinicId(): Promise<string | null> {
-  const store = await cookies()
-  return store.get(COOKIE_NAME)?.value ?? null
+  return getActiveOrganizationId()
 }
 
-export async function setActiveClinicId(clinicId: string): Promise<void> {
-  const store = await cookies()
-  store.set(COOKIE_NAME, clinicId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: COOKIE_MAX_AGE,
-  })
+export async function setActiveClinicId(orgId: string): Promise<void> {
+  return setActiveOrganizationId(orgId)
 }
 
 export async function clearActiveClinicId(): Promise<void> {
-  const store = await cookies()
-  store.delete(COOKIE_NAME)
+  return clearActiveContext()
 }

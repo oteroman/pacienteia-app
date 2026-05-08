@@ -2,20 +2,20 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 interface AuditRow {
-  id: string
-  actor_email: string | null
-  action_type: string
-  clinic_name: string | null
-  clinic_id: string | null
-  details: Record<string, unknown>
-  created_at: string
+  id:              string
+  actor_email:     string | null
+  action_type:     string
+  organization_name: string | null
+  organization_id: string | null
+  details:         Record<string, unknown>
+  created_at:      string
 }
 
 async function fetchAuditLog(limit = 100): Promise<AuditRow[]> {
   const sb = createAdminClient() as any
   const { data } = await sb
     .from('platform_audit_log')
-    .select('id, actor_email, action_type, clinic_name, clinic_id, details, created_at')
+    .select('id, actor_email, action_type, organization_name, organization_id, details, created_at')
     .order('created_at', { ascending: false })
     .limit(limit)
   return data ?? []
@@ -68,9 +68,9 @@ export default async function AuditPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-300 text-xs">
-                  {r.clinic_id ? (
-                    <Link href={`/platform/tenants/${r.clinic_id}`} className="hover:text-white underline underline-offset-2">
-                      {r.clinic_name ?? r.clinic_id}
+                  {r.organization_id ? (
+                    <Link href={`/platform/tenants/${r.organization_id}`} className="hover:text-white underline underline-offset-2">
+                      {r.organization_name ?? r.organization_id}
                     </Link>
                   ) : '—'}
                 </td>

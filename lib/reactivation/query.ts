@@ -34,7 +34,7 @@ export async function getInactivePatients(
   const { data: withFuture } = await supabase
     .from('appointments')
     .select('patient_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gt('scheduled_at', new Date().toISOString())
     .in('status', ['scheduled', 'confirmed'])
 
@@ -47,7 +47,7 @@ export async function getInactivePatients(
   const { data: recentCampaigns } = await supabase
     .from('reactivation_campaigns')
     .select('patient_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gte('sent_at', thirtyDaysAgo.toISOString())
     .in('status', ['sent', 'responded'])
 
@@ -58,7 +58,7 @@ export async function getInactivePatients(
   let query = supabase
     .from('patients')
     .select('id, full_name, phone, last_visit_date')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .is('deleted_at', null)
     .not('status', 'in', '("blocked","lead")')
     .lte('last_visit_date', cutoffISO)
@@ -98,7 +98,7 @@ export async function getPendingStep2Patients(clinicId: string): Promise<string[
   const { data } = await supabase
     .from('reactivation_campaigns')
     .select('patient_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .eq('step', 1)
     .eq('status', 'sent')
     .lte('sent_at', sevenDaysAgo.toISOString())
@@ -110,7 +110,7 @@ export async function getPendingStep2Patients(clinicId: string): Promise<string[
   const { data: step2Existing } = await supabase
     .from('reactivation_campaigns')
     .select('patient_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .eq('step', 2)
     .in('patient_id', patientIds)
 

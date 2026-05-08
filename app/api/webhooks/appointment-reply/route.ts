@@ -68,10 +68,10 @@ export async function POST(req: NextRequest) {
   const sb = createAdminClient() as any
   const now = new Date().toISOString()
 
-  // Fetch appointment to verify it exists and get clinic_id + patient data
+  // Fetch appointment to verify it exists and get organization_id + patient data
   const { data: appt } = await sb
     .from('appointments')
-    .select('id, clinic_id, status, treatment_type, scheduled_at, patient_id, patients ( full_name, phone )')
+    .select('id, organization_id, status, treatment_type, scheduled_at, patient_id, patients ( full_name, phone )')
     .eq('id', appointment_id)
     .is('deleted_at', null)
     .single()
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   // On cancellation: trigger rebooking (same patient) + backfill (find replacement)
   if (newStatus === 'cancelled') {
     triggerRebooking({
-      clinicId:       appt.clinic_id,
+      organizationId: appt.organization_id,
       appointmentId:  appointment_id,
       patientId:      appt.patient_id ?? null,
       patientName,
@@ -114,25 +114,13 @@ export async function POST(req: NextRequest) {
     }).catch(() => {})
 
     triggerBackfill({
-      clinicId:      appt.clinic_id,
-      appointmentId: appointment_id,
-      treatmentType: appt.treatment_type,
-      slotStart:     appt.scheduled_at,
-      reasonOpened:  'cancellation',
+      organizationId: appt.organization_id,
+      appointmentId:  appointment_id,
+      treatmentType:  appt.treatment_type,
+      slotStart:      appt.scheduled_at,
+      reasonOpened:   'cancellation',
     }).catch(() => {})
   }
-
-  // Log to workflow_runs
-  await sb.from('workflow_runs').insert({
-    clinic_id:    appt.clinic_id,
-    event_type:   'appointment_reply',
-    entity_type:  'appointment',
-    entity_id:    appointment_id,
-    status:       'success',
-    payload:      { response, workflow_run_id: workflow_run_id ?? null },
-    result:       { newStatus, patientName },
-    completed_at: now,
-  }).then(() => {}).catch(() => {})
 
   return NextResponse.json({
     appointmentId: appointment_id,

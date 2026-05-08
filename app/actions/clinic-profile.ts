@@ -1,20 +1,20 @@
 'use server'
 
-import { revalidatePath }      from 'next/cache'
-import { createClient }        from '@/lib/supabase/server'
-import { getActiveClinicId }   from '@/lib/tenant/active-clinic'
+import { revalidatePath }    from 'next/cache'
+import { createClient }      from '@/lib/supabase/server'
+import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { upsertClinicProfile } from '@/lib/clinic/profile'
-import type { BrandTone }      from '@/lib/clinic/profile'
+import type { BrandTone }    from '@/lib/clinic/profile'
 
 export async function saveClinicProfile(formData: FormData): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  const clinicId = await getActiveClinicId()
-  if (!clinicId) return
+  const orgId = await getActiveClinicId()
+  if (!orgId) return
 
-  await upsertClinicProfile(clinicId, {
+  await upsertClinicProfile(orgId, {
     brandName:        (formData.get('brand_name')        as string | null) || null,
     brandTone:        (formData.get('brand_tone')        as BrandTone)     || 'professional',
     brandToneNotes:   (formData.get('brand_tone_notes')  as string | null) || null,

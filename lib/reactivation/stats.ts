@@ -25,7 +25,7 @@ export async function getReactivationStats(clinicId: string): Promise<Reactivati
   const { data: campaigns } = await supabase
     .from('reactivation_campaigns')
     .select('status, step')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gte('sent_at', monthStart)
 
   type CampaignRow = { status: string; step: number }
@@ -40,7 +40,7 @@ export async function getReactivationStats(clinicId: string): Promise<Reactivati
 
   // Get clinic's ticket_avg for revenue estimate
   const { data: clinic } = await supabase
-    .from('clinics')
+    .from('organizations')
     .select('ticket_avg')
     .eq('id', clinicId)
     .single()

@@ -23,61 +23,60 @@ export async function fetchAllTenants(): Promise<TenantRow[]> {
   noStore()
   const sb = createAdminClient() as any
 
-  const { data: clinics } = await sb
-    .from('clinics')
+  const { data: orgs } = await sb
+    .from('organizations')
     .select('id, name, slug, plan, subscription_status, trial_ends_at, current_period_end, created_at')
     .order('created_at', { ascending: false })
 
-  if (!clinics?.length) return []
+  if (!orgs?.length) return []
 
-  // Member counts
   const { data: members } = await sb
-    .from('clinic_members')
-    .select('clinic_id')
+    .from('org_members')
+    .select('organization_id')
 
-  const countByClinic: Record<string, number> = {}
+  const countByOrg: Record<string, number> = {}
   for (const m of (members ?? [])) {
-    countByClinic[m.clinic_id] = (countByClinic[m.clinic_id] ?? 0) + 1
+    countByOrg[m.organization_id] = (countByOrg[m.organization_id] ?? 0) + 1
   }
 
-  // Last activity from workflow_runs
-  const { data: runs } = await sb
-    .from('workflow_runs')
-    .select('clinic_id, created_at')
+  const { data: auditRows } = await sb
+    .from('platform_audit_log')
+    .select('organization_id, created_at')
     .order('created_at', { ascending: false })
     .limit(500)
 
-  const lastByClinic: Record<string, string> = {}
-  for (const r of (runs ?? [])) {
-    if (!lastByClinic[r.clinic_id]) lastByClinic[r.clinic_id] = r.created_at
+  const lastByOrg: Record<string, string> = {}
+  for (const r of (auditRows ?? [])) {
+    if (r.organization_id && !lastByOrg[r.organization_id]) {
+      lastByOrg[r.organization_id] = r.created_at
+    }
   }
 
-  return clinics.map((c: any) => ({
-    ...c,
-    memberCount: countByClinic[c.id] ?? 0,
-    lastActivity: lastByClinic[c.id] ?? null,
+  return orgs.map((o: any) => ({
+    ...o,
+    memberCount: countByOrg[o.id] ?? 0,
+    lastActivity: lastByOrg[o.id] ?? null,
   }))
 }
 
-export async function fetchTenantDetail(clinicId: string): Promise<TenantDetail | null> {
+export async function fetchTenantDetail(orgId: string): Promise<TenantDetail | null> {
   noStore()
   const sb = createAdminClient() as any
 
-  const { data: clinic } = await sb
-    .from('clinics')
+  const { data: org } = await sb
+    .from('organizations')
     .select('id, name, slug, plan, subscription_status, trial_ends_at, current_period_end, created_at')
-    .eq('id', clinicId)
+    .eq('id', orgId)
     .single()
 
-  if (!clinic) return null
+  if (!org) return null
 
-  // Members with profile info
   const { data: rawMembers } = await sb
-    .from('clinic_members')
+    .from('org_members')
     .select('role, profiles(id, full_name), user_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', orgId)
+    .eq('status', 'active')
 
-  // Get emails from auth.users via admin API
   const { data: { users } } = await sb.auth.admin.listUsers({ perPage: 1000 })
   const emailById: Record<string, string> = {}
   for (const u of (users ?? [])) emailById[u.id] = u.email ?? ''
@@ -89,16 +88,15 @@ export async function fetchTenantDetail(clinicId: string): Promise<TenantDetail 
     full_name: m.profiles?.full_name ?? null,
   }))
 
-  // Platform audit for this clinic
   const { data: auditRows } = await sb
     .from('platform_audit_log')
     .select('action_type, actor_email, details, created_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(20)
 
   return {
-    ...clinic,
+    ...org,
     memberCount: members.length,
     lastActivity: null,
     members,

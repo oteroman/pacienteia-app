@@ -3,7 +3,7 @@ import { triggerBackfill }   from '@/lib/backfill/index'
 
 // ── Types ─────────────────────────────────────────────────────
 export interface GapDay {
-  clinicId:     string
+  organizationId:     string
   dateLabel:    string   // YYYY-MM-DD (Lima)
   slotStart:    string   // ISO UTC = 10:00 AM Lima of that day
   slotEnd:      string   // ISO UTC = 18:00 Lima of that day
@@ -13,7 +13,7 @@ export interface GapDay {
 }
 
 export interface DetectionResult {
-  clinicId:  string
+  organizationId:  string
   gapsFound: number
   triggered: number   // new slot_openings created
   skipped:   number   // gap days already had an open slot_opening
@@ -47,7 +47,7 @@ function limaSlotAt(dateLabel: string, hour: number): string {
 
 // ── Core algorithm ────────────────────────────────────────────
 export async function detectGapsForClinic(
-  clinicId:  string,
+  organizationId:  string,
   daysAhead = 7,
 ): Promise<DetectionResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +60,7 @@ export async function detectGapsForClinic(
   const { data: recentRows } = await sb
     .from('appointments')
     .select('scheduled_at, treatment_type')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .in('status', ['scheduled', 'confirmed', 'completed'])
     .gte('scheduled_at', thirtyDaysAgo)
     .lt('scheduled_at', now.toISOString())
@@ -71,7 +71,7 @@ export async function detectGapsForClinic(
 
   // Not enough history to set a meaningful threshold — skip
   if (avgPerDay < 0.5) {
-    return { clinicId, gapsFound: 0, triggered: 0, skipped: 0 }
+    return { organizationId, gapsFound: 0, triggered: 0, skipped: 0 }
   }
 
   // Threshold: 60% of average (below that = under-density)
@@ -92,7 +92,7 @@ export async function detectGapsForClinic(
   const { data: futureRows } = await sb
     .from('appointments')
     .select('scheduled_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .in('status', ['scheduled', 'confirmed'])
     .gte('scheduled_at', futureStart)
     .lt('scheduled_at', futureEnd)
@@ -113,7 +113,7 @@ export async function detectGapsForClinic(
     const count = countByDay[dateLabel] ?? 0
     if (count < threshold) {
       gapDays.push({
-        clinicId,
+        organizationId,
         dateLabel,
         slotStart:    limaSlotAt(dateLabel, 10),   // 10:00 AM Lima
         slotEnd:      limaSlotAt(dateLabel, 18),   // 6:00 PM Lima
@@ -125,14 +125,14 @@ export async function detectGapsForClinic(
   }
 
   if (gapDays.length === 0) {
-    return { clinicId, gapsFound: 0, triggered: 0, skipped: 0 }
+    return { organizationId, gapsFound: 0, triggered: 0, skipped: 0 }
   }
 
   // ── 4. Check which gap days are already tracked ──────────────
   const { data: existingRows } = await sb
     .from('slot_openings')
     .select('slot_start')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .eq('reason_opened', 'gap_detected')
     .eq('status', 'open')
     .gte('slot_start', futureStart)
@@ -154,7 +154,7 @@ export async function detectGapsForClinic(
     }
 
     const id = await triggerBackfill({
-      clinicId:     gap.clinicId,
+      organizationId:     gap.organizationId,
       appointmentId: null,
       treatmentType: gap.topTreatment,
       slotStart:    gap.slotStart,
@@ -166,5 +166,5 @@ export async function detectGapsForClinic(
     else    skipped++
   }
 
-  return { clinicId, gapsFound: gapDays.length, triggered, skipped }
+  return { organizationId, gapsFound: gapDays.length, triggered, skipped }
 }

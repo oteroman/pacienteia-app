@@ -9,66 +9,87 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     }
   )
 
-  // Refresh session — must be called before any redirect to avoid auth loops
+  // Refresh session — must run before any redirect to avoid auth loops
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
-  // Platform admins (platform_role in app_metadata JWT) must always go to /platform
-  // unless they're already there, logging out, or in impersonation mode
+  // ── Platform admin routing ─────────────────────────────────────────────
+  // platform_role is in JWT app_metadata — no DB call needed
   const isPlatformAdmin = !!(user?.app_metadata?.platform_role)
   const isImpersonating = !!request.cookies.get('pa_impersonate')?.value
 
   if (isPlatformAdmin && !isImpersonating) {
-    const onPlatform = pathname.startsWith('/platform')
-    const onAuth    = pathname.startsWith('/login') || pathname.startsWith('/auth/')
-    const onAnalytics = pathname.startsWith('/analytics')
-    // Let platform admins through to /platform, /analytics/admin, and auth routes
-    if (!onPlatform && !onAuth && !onAnalytics) {
+    const onPlatform   = pathname.startsWith('/platform')
+    const onAuth       = pathname.startsWith('/login') || pathname.startsWith('/auth/')
+    const onAnalytics  = pathname.startsWith('/analytics')
+    const onOnboarding = pathname.startsWith('/onboarding')
+    if (!onPlatform && !onAuth && !onAnalytics && !onOnboarding) {
       return NextResponse.redirect(new URL('/platform', request.url))
     }
   }
 
-  const isPublic = pathname.startsWith('/login') || pathname.startsWith('/auth/')
-  const isProtected =
+  // ── Auth routing ───────────────────────────────────────────────────────
+  const isPublicPath =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/onboarding') ||   // registration + onboarding wizard
+    pathname.startsWith('/invite/')         // invitation accept link
+
+  const isProtectedPath =
     pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/leads') ||
     pathname.startsWith('/patients') ||
     pathname.startsWith('/appointments') ||
+    pathname.startsWith('/leads') ||
     pathname.startsWith('/billing') ||
     pathname.startsWith('/settings') ||
     pathname.startsWith('/analytics') ||
     pathname.startsWith('/blocked') ||
     pathname.startsWith('/platform') ||
-    pathname.startsWith('/clinic-selector') ||
+    pathname.startsWith('/org-selector') ||
     pathname === '/'
 
-  if (!user && isProtected) {
+  // Unauthenticated → login
+  if (!user && isProtectedPath) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Authenticated platform admin → /platform (not /dashboard)
+  if (user && isPlatformAdmin && pathname.startsWith('/login')) {
+    return NextResponse.redirect(new URL('/platform', request.url))
+  }
+
+  // Authenticated clinic user → /dashboard
   if (user && !isPlatformAdmin && pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  if (user && isPlatformAdmin && pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/platform', request.url))
+  // ── Onboarding gate ────────────────────────────────────────────────────
+  // Clinic users with no active_organization_id cookie on protected paths
+  // must complete onboarding or select an org.
+  // Exception: /org-selector and /onboarding paths are already allowed.
+  if (user && !isPlatformAdmin && isProtectedPath) {
+    const hasOrg    = !!request.cookies.get('active_organization_id')?.value
+    const hasBranch = !!request.cookies.get('active_branch_id')?.value
+
+    const needsContext =
+      !pathname.startsWith('/org-selector') &&
+      !pathname.startsWith('/onboarding') &&
+      !pathname.startsWith('/invite/')
+
+    if (needsContext && (!hasOrg || !hasBranch)) {
+      return NextResponse.redirect(new URL('/org-selector', request.url))
+    }
   }
 
   return response

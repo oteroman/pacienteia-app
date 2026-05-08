@@ -3,15 +3,15 @@ import { PLAN_CONFIG } from '@/lib/plans/config'
 import type { Plan } from '@/lib/plans/config'
 
 type EventRow = {
-  clinic_id:   string
-  event:       string
-  resource:    string | null
-  gate_state:  string | null
-  source_page: string | null
-  created_at:  string
+  organization_id: string
+  event:           string
+  resource:        string | null
+  gate_state:      string | null
+  source_page:     string | null
+  created_at:      string
 }
 
-type ClinicRow = {
+type OrgRow = {
   id:                  string
   name:                string
   plan:                string | null
@@ -19,10 +19,10 @@ type ClinicRow = {
 }
 
 type UsageRow = {
-  clinic_id:          string
-  leads_count:        number
-  appointments_count: number
-  active_users:       number
+  organization_id: string
+  leads:           number
+  appointments:    number
+  active_users:    number
 }
 
 function pct(n: number, d: number) {
@@ -42,26 +42,26 @@ export default async function PlatformHealthPage() {
 
   const { data: rawEvents } = await supabase
     .from('gating_events')
-    .select('clinic_id, event, resource, gate_state, source_page, created_at')
+    .select('organization_id, event, resource, gate_state, source_page, created_at')
     .gte('created_at', sevenDaysAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(2000)
 
-  const events = (rawEvents ?? []) as EventRow[]
-  const clinicIds = [...new Set(events.map((e) => e.clinic_id))]
+  const events = (rawEvents ?? []) as unknown as EventRow[]
+  const orgIds = [...new Set(events.map((e) => e.organization_id))]
 
-  const [rawClinics, rawUsage] = clinicIds.length > 0
+  const [rawOrgs, rawUsage] = orgIds.length > 0
     ? await Promise.all([
-        supabase.from('clinics').select('id, name, plan, subscription_status').in('id', clinicIds),
-        supabase.from('subscription_usage').select('clinic_id, leads_count, appointments_count, active_users').in('clinic_id', clinicIds).eq('period_start', periodStart()),
+        supabase.from('organizations').select('id, name, plan, subscription_status').in('id', orgIds),
+        supabase.from('subscription_usage').select('organization_id, leads, appointments, active_users').in('organization_id', orgIds).eq('period_start', periodStart()),
       ])
     : [{ data: [] }, { data: [] }]
 
-  const clinicMap = new Map<string, ClinicRow>(
-    ((rawClinics.data ?? []) as ClinicRow[]).map((c) => [c.id, c])
+  const clinicMap = new Map<string, OrgRow>(
+    ((rawOrgs.data ?? []) as unknown as OrgRow[]).map((c) => [c.id, c])
   )
   const usageMap = new Map<string, UsageRow>(
-    ((rawUsage.data ?? []) as UsageRow[]).map((u) => [u.clinic_id, u])
+    ((rawUsage.data ?? []) as unknown as UsageRow[]).map((u) => [u.organization_id, u])
   )
 
   const blocked   = events.filter((e) => e.event === 'blocked_action_attempted')
@@ -69,8 +69,8 @@ export default async function PlatformHealthPage() {
   const primary   = events.filter((e) => e.event === 'cta_primary_clicked')
   const secondary = events.filter((e) => e.event === 'cta_secondary_clicked')
 
-  const softClinicIds = new Set(blocked.filter((e) => e.gate_state === 'soft_blocked').map((e) => e.clinic_id))
-  const hardClinicIds = new Set(blocked.filter((e) => e.gate_state === 'hard_blocked').map((e) => e.clinic_id))
+  const softClinicIds = new Set(blocked.filter((e) => e.gate_state === 'soft_blocked').map((e) => e.organization_id))
+  const hardClinicIds = new Set(blocked.filter((e) => e.gate_state === 'hard_blocked').map((e) => e.organization_id))
 
   const resources = ['leads', 'appointments', 'users'] as const
   const byResource = resources.map((r) => {
@@ -94,7 +94,7 @@ export default async function PlatformHealthPage() {
   const topPages = Object.entries(pageMap).sort(([, a], [, b]) => b - a).slice(0, 10)
 
   const clinicBlockMap = blocked.reduce<Record<string, number>>((acc, e) => {
-    acc[e.clinic_id] = (acc[e.clinic_id] ?? 0) + 1
+    acc[e.organization_id] = (acc[e.organization_id] ?? 0) + 1
     return acc
   }, {})
   const topClinics = Object.entries(clinicBlockMap)
@@ -108,7 +108,7 @@ export default async function PlatformHealthPage() {
     }))
 
   const clinicCtaMap = primary.reduce<Record<string, number>>((acc, e) => {
-    acc[e.clinic_id] = (acc[e.clinic_id] ?? 0) + 1
+    acc[e.organization_id] = (acc[e.organization_id] ?? 0) + 1
     return acc
   }, {})
 
@@ -121,8 +121,8 @@ export default async function PlatformHealthPage() {
       const isHard  = hardClinicIds.has(id)
       const hasCta  = (clinicCtaMap[id] ?? 0) > 0
       const blocks7d = clinicBlockMap[id] ?? 0
-      const leadsUsed  = usage?.leads_count ?? 0
-      const aptUsed    = usage?.appointments_count ?? 0
+      const leadsUsed  = usage?.leads ?? 0
+      const aptUsed    = usage?.appointments ?? 0
       const leadsPct   = limits.leads_per_month > 0 ? pct(leadsUsed, limits.leads_per_month) : 0
       const aptPct     = limits.appointments_per_month > 0 ? pct(aptUsed, limits.appointments_per_month) : 0
       const maxPct     = Math.max(leadsPct, aptPct)

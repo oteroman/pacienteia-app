@@ -49,15 +49,18 @@ export async function requirePlatformAdmin(): Promise<PlatformUser> {
   return pu
 }
 
-/** Returns the clinic_id being impersonated, or null. */
-export async function getImpersonatedClinicId(): Promise<string | null> {
+/** Returns the organization_id being impersonated, or null. */
+export async function getImpersonatedOrgId(): Promise<string | null> {
   const store = await cookies()
   return store.get(IMPERSONATE_COOKIE)?.value ?? null
 }
 
-export async function setImpersonatedClinicId(clinicId: string): Promise<void> {
+/** @deprecated Use getImpersonatedOrgId */
+export const getImpersonatedClinicId = getImpersonatedOrgId
+
+export async function setImpersonatedOrgId(orgId: string): Promise<void> {
   const store = await cookies()
-  store.set(IMPERSONATE_COOKIE, clinicId, {
+  store.set(IMPERSONATE_COOKIE, orgId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

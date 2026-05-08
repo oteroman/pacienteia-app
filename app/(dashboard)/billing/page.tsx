@@ -12,8 +12,6 @@ import { UsageBar } from '@/components/plan/usage-bar'
 import { UpgradeBanner } from '@/components/plan/upgrade-banner'
 import { ReactivationStatsCard } from '@/components/plan/reactivation-stats'
 import { ReputationStatsCard } from '@/components/plan/reputation-stats'
-import type { Clinic } from '@/types/database'
-
 // Feature labels shown in the "included in your plan" section
 const FEATURE_LABELS: Record<PlanFeature, string> = {
   reputation_shield:       'Escudo de reputación (encuesta + Google)',
@@ -48,18 +46,17 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
 
 export default async function BillingPage() {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const supabase = await createClient()
-  const [usage, { data: rawClinic }, reactivationStats, reputationStats] = await Promise.all([
+  const [usage, { data: rawOrg }, reactivationStats, reputationStats] = await Promise.all([
     getFullUsage(clinicId),
-    supabase.from('clinics').select('*').eq('id', clinicId).single(),
+    (supabase as any).from('organizations').select('*').eq('id', clinicId).single(),
     getReactivationStats(clinicId),
     getReputationStats(clinicId),
   ])
 
-  const clinic = rawClinic as Clinic | null
-  if (!clinic) redirect('/clinic-selector')
+  if (!rawOrg) redirect('/org-selector')
 
   const planStatus = await getClinicPlanStatus(clinicId, usage)
   const { sub, limits, isActive, trialDaysLeft } = planStatus

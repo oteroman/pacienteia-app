@@ -8,12 +8,12 @@ import { fetchClinicProfile, TONE_LLM_HINT } from '@/lib/clinic/profile'
 const client = new Anthropic()
 
 export async function generateDraft(intakeId: string): Promise<string> {
-  const clinicId = await getActiveClinicId()
-  if (!clinicId) return ''
+  const orgId = await getActiveClinicId()
+  if (!orgId) return ''
 
   const [intake, profile] = await Promise.all([
-    fetchIntake(clinicId, intakeId),
-    fetchClinicProfile(clinicId),
+    fetchIntake(orgId, intakeId),
+    fetchClinicProfile(orgId),
   ])
   if (!intake) return ''
 

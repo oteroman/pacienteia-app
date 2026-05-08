@@ -16,7 +16,7 @@ interface AppointmentRow {
 export default async function DashboardPage() {
   const supabase = await createClient()
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const today = new Date().toISOString().split('T')[0]
 
@@ -26,18 +26,18 @@ export default async function DashboardPage() {
     supabase
       .from('metrics_daily')
       .select('*')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .eq('date', today)
       .maybeSingle(),
     supabase
       .from('patients')
       .select('id', { count: 'exact', head: true })
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .eq('status', 'active'),
     supabase
       .from('appointments')
       .select('id, treatment_type, scheduled_at, status, patients(full_name)')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', clinicId)
       .gte('scheduled_at', `${today}T00:00:00`)
       .lte('scheduled_at', `${today}T23:59:59`)
       .order('scheduled_at'),

@@ -105,12 +105,12 @@ export interface TaskAuditEntry {
 }
 
 type TaskRow = {
-  id: string; clinic_id: string; trigger_type: string; status: string; priority: string
+  id: string; organization_id: string; trigger_type: string; status: string; priority: string
   title: string; description: string; action_text: string; message_template: string | null
   health_score: number | null; snoozed_until: string | null; resolved_at: string | null
   escalated_at: string | null; reminder_sent_at: string | null; last_note: string | null
   created_at: string
-  clinics: { name: string; plan: string } | null
+  organizations: { name: string; plan: string } | null
 }
 
 // ── Sync ─────────────────────────────────────────────────────
@@ -125,12 +125,12 @@ export async function syncClinicTasks(clinics: ClinicHealth[]): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingRaw } = await (supabase as any)
     .from('clinic_tasks')
-    .select('clinic_id, trigger_type')
+    .select('organization_id, trigger_type')
     .eq('status', 'open')
 
   const existing = new Set<string>(
-    ((existingRaw ?? []) as { clinic_id: string; trigger_type: string }[])
-      .map((r) => `${r.clinic_id}:${r.trigger_type}`)
+    ((existingRaw ?? []) as { organization_id: string; trigger_type: string }[])
+      .map((r) => `${r.organization_id}:${r.trigger_type}`)
   )
 
   const toInsert: object[] = []
@@ -140,7 +140,7 @@ export async function syncClinicTasks(clinics: ClinicHealth[]): Promise<void> {
       const playbook = PLAYBOOKS[alert]
       if (!playbook) continue
       toInsert.push({
-        clinic_id:        clinic.clinicId,
+        organization_id:  clinic.clinicId,
         trigger_type:     alert,
         status:           'open',
         priority:         playbook.priority,
@@ -166,7 +166,7 @@ export async function fetchOpenTasks(): Promise<ClinicTask[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('clinic_tasks')
-    .select('*, clinics(name, plan)')
+    .select('*, organizations(name, plan)')
     .eq('status', 'open')
     .order('created_at', { ascending: false })
     .limit(100)
@@ -181,7 +181,7 @@ export async function fetchRecentlyResolved(limit = 10): Promise<ClinicTask[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('clinic_tasks')
-    .select('*, clinics(name, plan)')
+    .select('*, organizations(name, plan)')
     .in('status', ['done', 'snoozed'])
     .order('updated_at', { ascending: false })
     .limit(limit)
@@ -192,9 +192,9 @@ export async function fetchRecentlyResolved(limit = 10): Promise<ClinicTask[]> {
 function mapRow(r: TaskRow): ClinicTask {
   return {
     id:              r.id,
-    clinicId:        r.clinic_id,
-    clinicName:      r.clinics?.name ?? r.clinic_id.slice(0, 8),
-    plan:            r.clinics?.plan ?? 'unknown',
+    clinicId:        r.organization_id,
+    clinicName:      r.organizations?.name ?? r.organization_id.slice(0, 8),
+    plan:            r.organizations?.plan ?? 'unknown',
     triggerType:     r.trigger_type as AlertType,
     status:          r.status as TaskStatus,
     priority:        r.priority as 'high' | 'medium' | 'low',

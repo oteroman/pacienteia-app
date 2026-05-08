@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { LeadTable } from '@/components/lead/lead-table'
 import { GatedActionButton } from '@/components/plan/gated-action-button'
-import type { LeadEvent } from '@/types/database'
-
 type LeadPayload = { ai_priority?: string }
 
 interface PageProps {
@@ -14,31 +12,29 @@ interface PageProps {
 
 export default async function LeadsPage({ searchParams }: PageProps) {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const { priority = '' } = await searchParams
   const supabase = await createClient()
 
-  const { data, count } = await supabase
-    .from('lead_events')
+  const { data, count } = await (supabase as any)
+    .from('intakes')
     .select('*', { count: 'exact' })
-    .eq('clinic_id', clinicId)
-    .is('deleted_at', null)
+    .eq('organization_id', clinicId)
+    .in('detected_intent', ['lead_inquiry', 'appointment_request'])
+    .not('status', 'in', '("resolved","dismissed")')
     .order('created_at', { ascending: false })
     .limit(100)
 
-  const allLeads = (data ?? []) as LeadEvent[]
+  const allLeads = (data ?? []) as any[]
 
   const leads = priority
-    ? allLeads.filter((l) => {
-        const p = (l.payload ?? {}) as LeadPayload
-        return p.ai_priority === priority
-      })
+    ? allLeads.filter((l) => l.priority === priority)
     : allLeads
 
-  const hotCount  = allLeads.filter((l) => ((l.payload ?? {}) as LeadPayload).ai_priority === 'hot').length
-  const warmCount = allLeads.filter((l) => ((l.payload ?? {}) as LeadPayload).ai_priority === 'warm').length
-  const coldCount = allLeads.filter((l) => ((l.payload ?? {}) as LeadPayload).ai_priority === 'cold').length
+  const hotCount  = allLeads.filter((l) => l.priority === 'high').length
+  const warmCount = allLeads.filter((l) => l.priority === 'medium').length
+  const coldCount = allLeads.filter((l) => l.priority === 'low').length
 
   return (
     <div className="space-y-6">

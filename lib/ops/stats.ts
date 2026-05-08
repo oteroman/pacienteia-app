@@ -58,18 +58,18 @@ export async function fetchOpsStats(clinicId: string): Promise<OpsStats> {
     todayIntakes,
     resolvedToday,
   ] = await Promise.all([
-    sb.from('intakes').select('status').eq('clinic_id', clinicId)
+    sb.from('intakes').select('status').eq('organization_id', clinicId)
       .in('status', ['new', 'in_progress', 'waiting_customer', 'waiting_staff']),
-    sb.from('intakes').select('id').eq('clinic_id', clinicId)
+    sb.from('intakes').select('id').eq('organization_id', clinicId)
       .gt('escalation_level', 0)
       .not('status', 'in', '(resolved,dismissed)'),
-    sb.from('intakes').select('id').eq('clinic_id', clinicId)
+    sb.from('intakes').select('id').eq('organization_id', clinicId)
       .eq('status', 'waiting_customer')
       .lte('follow_up_due_at', now.toISOString()),
-    sb.from('copilot_tasks').select('id').eq('clinic_id', clinicId).eq('status', 'open'),
-    sb.from('intakes').select('id').eq('clinic_id', clinicId)
+    sb.from('copilot_tasks').select('id').eq('organization_id', clinicId).eq('status', 'open'),
+    sb.from('intakes').select('id').eq('organization_id', clinicId)
       .gte('created_at', todayStart),
-    sb.from('intakes').select('id').eq('clinic_id', clinicId)
+    sb.from('intakes').select('id').eq('organization_id', clinicId)
       .eq('status', 'resolved')
       .gte('resolved_at', todayStart),
   ])
@@ -94,7 +94,7 @@ export async function fetchEscalations(clinicId: string): Promise<EscalatedIntak
   const { data } = await sb
     .from('intakes')
     .select('id, contact_name, source_channel, escalation_level, normalized_summary, sla_due_at, created_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gt('escalation_level', 0)
     .not('status', 'in', '(resolved,dismissed)')
     .order('escalation_level', { ascending: false })
@@ -124,7 +124,7 @@ export async function fetchFollowUpsDue(clinicId: string): Promise<FollowUpItem[
   const { data } = await sb
     .from('intakes')
     .select('id, contact_name, source_channel, status, normalized_summary, follow_up_due_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .in('status', ['waiting_customer', 'waiting_staff'])
     .lte('follow_up_due_at', now)
     .order('follow_up_due_at', { ascending: true })
@@ -150,7 +150,7 @@ export async function fetchRecentEvents(clinicId: string, limit = 30): Promise<I
   const { data } = await sb
     .from('intake_events')
     .select('id, intake_id, event_type, actor, details, created_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .order('created_at', { ascending: false })
     .limit(limit)
 

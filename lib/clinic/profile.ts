@@ -33,7 +33,7 @@ export interface ClinicProfile {
 }
 
 type ProfileRow = {
-  clinic_id: string; brand_name: string | null; brand_tone: string
+  organization_id: string; brand_name: string | null; brand_tone: string
   brand_tone_notes: string | null; default_signature: string | null
   response_opener: string | null; whatsapp: string | null; phone: string | null
   address: string | null; business_hours: string | null
@@ -42,7 +42,7 @@ type ProfileRow = {
 
 function toProfile(r: ProfileRow): ClinicProfile {
   return {
-    clinicId:         r.clinic_id,
+    clinicId:         r.organization_id,
     brandName:        r.brand_name,
     brandTone:        r.brand_tone as BrandTone,
     brandToneNotes:   r.brand_tone_notes,
@@ -63,9 +63,9 @@ export async function fetchClinicProfile(clinicId: string): Promise<ClinicProfil
   const sb = createAdminClient() as any
 
   const { data } = await sb
-    .from('clinic_profiles')
+    .from('organization_profiles')
     .select('*')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .single()
 
   return data ? toProfile(data as ProfileRow) : null
@@ -79,8 +79,8 @@ export async function upsertClinicProfile(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  await sb.from('clinic_profiles').upsert({
-    clinic_id:         clinicId,
+  await sb.from('organization_profiles').upsert({
+    organization_id:         clinicId,
     brand_name:        fields.brandName        ?? null,
     brand_tone:        fields.brandTone        ?? 'professional',
     brand_tone_notes:  fields.brandToneNotes   ?? null,
@@ -93,7 +93,7 @@ export async function upsertClinicProfile(
     website:           fields.website          ?? null,
     instagram_handle:  fields.instagramHandle  ?? null,
     updated_at:        new Date().toISOString(),
-  }, { onConflict: 'clinic_id' })
+  }, { onConflict: 'organization_id' })
 }
 
 // ── Serializable DTO for client components ────────────────────

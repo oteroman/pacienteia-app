@@ -1,7 +1,7 @@
 'use server'
 
-import { revalidatePath }    from 'next/cache'
-import { createClient }      from '@/lib/supabase/server'
+import { revalidatePath }   from 'next/cache'
+import { createClient }     from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { fillSlot, expireSlot } from '@/lib/backfill/index'
 
@@ -14,10 +14,10 @@ export async function markSlotFilled(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  const clinicId = await getActiveClinicId()
-  if (!clinicId) return
+  const orgId = await getActiveClinicId()
+  if (!orgId) return
 
-  await fillSlot(slotId, clinicId, selectedPatientId)
+  await fillSlot(slotId, orgId, selectedPatientId)
 
   revalidatePath('/backfill')
   revalidatePath('/ops')
@@ -28,10 +28,10 @@ export async function markSlotExpired(slotId: string, _fd: FormData): Promise<vo
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
 
-  const clinicId = await getActiveClinicId()
-  if (!clinicId) return
+  const orgId = await getActiveClinicId()
+  if (!orgId) return
 
-  await expireSlot(slotId, clinicId)
+  await expireSlot(slotId, orgId)
 
   revalidatePath('/backfill')
 }

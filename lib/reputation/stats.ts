@@ -21,7 +21,7 @@ export async function getReputationStats(clinicId: string): Promise<ReputationSt
   const { data: rows } = await supabase
     .from('patient_feedback')
     .select('score, google_review_sent, alert_sent, created_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gte('created_at', monthStart)
 
   type FeedbackRow = { score: number; google_review_sent: boolean; alert_sent: boolean; created_at: string }

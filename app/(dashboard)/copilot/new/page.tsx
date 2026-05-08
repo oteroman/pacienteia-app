@@ -14,14 +14,14 @@ export default async function NewInteractionPage() {
   if (!user) redirect('/login')
 
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sbClient = await createClient() as any
   const { data: patientsRaw } = await sbClient
     .from('patients')
     .select('id, full_name')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .order('full_name')
     .limit(200)
   const patients = (patientsRaw ?? []) as { id: string; full_name: string }[]

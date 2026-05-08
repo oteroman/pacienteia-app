@@ -26,19 +26,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 })
   }
 
-  // Validate clinic exists
+  // Validate org exists
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
   const { data: clinic } = await sb
-    .from('clinics').select('id').eq('id', clinic_id).single()
+    .from('organizations').select('id').eq('id', clinic_id).single()
 
   if (!clinic) {
-    return NextResponse.json({ error: 'clinic_not_found' }, { status: 404 })
+    return NextResponse.json({ error: 'org_not_found' }, { status: 404 })
   }
 
+  const { data: branch } = await sb
+    .from('branches').select('id')
+    .eq('organization_id', clinic_id).is('deleted_at', null)
+    .order('created_at', { ascending: true }).limit(1).single()
+
   const intakeId = await processIntake({
-    clinicId:     clinic_id,
-    channel:      'webform',
+    organizationId: clinic_id,
+    branchId:       branch?.id ?? clinic_id,
+    channel:        'webform',
     contactName:  typeof contact_name  === 'string' ? contact_name  : undefined,
     contactPhone: typeof contact_phone === 'string' ? contact_phone : undefined,
     contactEmail: typeof contact_email === 'string' ? contact_email : undefined,

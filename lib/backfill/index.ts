@@ -16,7 +16,7 @@ export interface Candidate {
 
 export interface SlotOpening {
   id:                string
-  clinicId:          string
+  organizationId:    string
   appointmentId:     string | null
   treatmentType:     string
   slotStart:         string
@@ -73,7 +73,7 @@ function buildWaMessage(
 async function findCandidates(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sb: any,
-  clinicId:      string,
+  organizationId: string,
   treatmentType: string,
   slotStart:     string,
   limit = 5,
@@ -90,7 +90,7 @@ async function findCandidates(
   const { data: histRows } = await sb
     .from('appointments')
     .select('patient_id, scheduled_at, patients ( id, full_name, phone, on_waitlist )')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .eq('treatment_type', treatmentType)
     .in('status', ['completed', 'confirmed'])
     .gte('scheduled_at', oneYearAgo)
@@ -118,7 +118,7 @@ async function findCandidates(
   const { data: reRows } = await sb
     .from('appointment_rebooking')
     .select('patient_id, patients ( id, full_name, phone, on_waitlist ), appointments ( treatment_type )')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .eq('outcome', 'pending')
     .not('patient_id', 'is', null)
     .limit(30)
@@ -146,7 +146,7 @@ async function findCandidates(
   const { data: inRows } = await sb
     .from('intakes')
     .select('patient_id')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
     .eq('detected_intent', 'appointment_request')
     .in('status', ['new', 'in_progress'])
     .not('patient_id', 'is', null)
@@ -176,46 +176,37 @@ async function findCandidates(
 
 // ── Core trigger ──────────────────────────────────────────────
 export interface TriggerBackfillInput {
-  clinicId:      string
-  appointmentId: string | null
-  treatmentType: string
-  slotStart:     string
-  slotEnd?:      string
-  reasonOpened:  SlotReason
+  organizationId: string
+  branchId?:      string
+  appointmentId:  string | null
+  treatmentType:  string
+  slotStart:      string
+  slotEnd?:       string
+  reasonOpened:   SlotReason
 }
 
 export async function triggerBackfill(input: TriggerBackfillInput): Promise<string | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  const candidates = await findCandidates(sb, input.clinicId, input.treatmentType, input.slotStart)
+  const candidates = await findCandidates(sb, input.organizationId, input.treatmentType, input.slotStart)
 
-  // Create synthetic interaction for copilot task FK
   let staffTaskId: string | null = null
-  if (candidates.length > 0) {
+  if (candidates.length > 0 && input.branchId) {
     const top = candidates[0]
-    const { data: interaction } = await sb.from('interactions').insert({
-      clinic_id:   input.clinicId,
-      source_type: 'staff_note',
-      raw_content: `[Backfill] Slot libre de ${input.treatmentType} — candidato: ${top.patientName}`,
-      status:      'done',
+    const { data: task } = await sb.from('copilot_tasks').insert({
+      organization_id: input.organizationId,
+      branch_id:       input.branchId,
+      patient_id:      top.patientId,
+      title:           `Llenar slot: contactar a ${top.patientName} — ${input.treatmentType}`,
+      description:     `Score ${top.score}/100. Tel: ${top.phone}. Razones: ${top.scoreReasons.join(', ')}.`,
+      priority:        'medium',
     }).select('id').single()
-
-    if (interaction) {
-      const { data: task } = await sb.from('copilot_tasks').insert({
-        interaction_id: interaction.id,
-        clinic_id:      input.clinicId,
-        patient_id:     top.patientId,
-        title:          `Llenar slot: contactar a ${top.patientName} — ${input.treatmentType}`,
-        description:    `Score ${top.score}/100. Tel: ${top.phone}. Razones: ${top.scoreReasons.join(', ')}.`,
-        priority:       'medium',
-      }).select('id').single()
-      staffTaskId = task?.id ?? null
-    }
+    staffTaskId = task?.id ?? null
   }
 
   const { data: record, error } = await sb.from('slot_openings').insert({
-    clinic_id:       input.clinicId,
+    organization_id: input.organizationId,
     appointment_id:  input.appointmentId,
     treatment_type:  input.treatmentType,
     slot_start:      input.slotStart,
@@ -235,7 +226,7 @@ export async function triggerBackfill(input: TriggerBackfillInput): Promise<stri
 }
 
 // ── Dashboard query ───────────────────────────────────────────
-export async function fetchBackfillDashboard(clinicId: string): Promise<BackfillDashboard> {
+export async function fetchBackfillDashboard(organizationId: string): Promise<BackfillDashboard> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb  = createAdminClient() as any
   const now = new Date()
@@ -252,14 +243,14 @@ export async function fetchBackfillDashboard(clinicId: string): Promise<Backfill
   const [openRes, filledRes, rateRes] = await Promise.all([
     sb.from('slot_openings')
       .select(selectSlot)
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', organizationId)
       .eq('status', 'open')
       .order('slot_start', { ascending: true })
       .limit(30),
 
     sb.from('slot_openings')
       .select(selectSlot)
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', organizationId)
       .eq('status', 'filled')
       .gte('filled_at', todayStart)
       .order('filled_at', { ascending: false })
@@ -267,13 +258,13 @@ export async function fetchBackfillDashboard(clinicId: string): Promise<Backfill
 
     sb.from('slot_openings')
       .select('status')
-      .eq('clinic_id', clinicId)
+      .eq('organization_id', organizationId)
       .gte('created_at', thirtyDaysAgo),
   ])
 
   const toSlot = (r: Record<string, unknown>): SlotOpening => ({
     id:                r.id as string,
-    clinicId:          r.clinic_id as string,
+    organizationId:    r.organization_id as string,
     appointmentId:     r.appointment_id as string | null,
     treatmentType:     r.treatment_type as string,
     slotStart:         r.slot_start as string,
@@ -313,7 +304,7 @@ export async function fetchBackfillDashboard(clinicId: string): Promise<Backfill
 
 export async function fillSlot(
   slotId:           string,
-  clinicId:         string,
+  organizationId:   string,
   selectedPatientId: string,
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -326,14 +317,14 @@ export async function fillSlot(
       fill_attempts:       1,
     })
     .eq('id', slotId)
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
 }
 
-export async function expireSlot(slotId: string, clinicId: string): Promise<void> {
+export async function expireSlot(slotId: string, organizationId: string): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (createAdminClient() as any)
     .from('slot_openings')
     .update({ status: 'expired' })
     .eq('id', slotId)
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', organizationId)
 }

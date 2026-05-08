@@ -9,7 +9,7 @@ interface PageProps {
 
 export default async function NewAppointmentPage({ searchParams }: PageProps) {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const { date, patient_id } = await searchParams
 
@@ -23,7 +23,7 @@ export default async function NewAppointmentPage({ searchParams }: PageProps) {
         <AppointmentForm
           defaultDate={date}
           defaultPatientId={patient_id}
-          clinicId={clinicId}
+          organizationId={clinicId}
           action={createAppointment}
         />
       </div>

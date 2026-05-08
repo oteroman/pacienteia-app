@@ -15,24 +15,24 @@ interface Trial {
 async function fetchTrials(): Promise<Trial[]> {
   const sb = createAdminClient() as any
 
-  const { data: clinics } = await sb
-    .from('clinics')
+  const { data: orgs } = await sb
+    .from('organizations')
     .select('id, name, slug, plan, trial_ends_at, created_at')
     .eq('subscription_status', 'trialing')
     .order('trial_ends_at', { ascending: true, nullsFirst: false })
 
-  if (!clinics?.length) return []
+  if (!orgs?.length) return []
 
   const { data: members } = await sb
-    .from('clinic_members')
-    .select('clinic_id')
+    .from('org_members')
+    .select('organization_id')
 
   const countMap: Record<string, number> = {}
   for (const m of (members ?? [])) {
-    countMap[m.clinic_id] = (countMap[m.clinic_id] ?? 0) + 1
+    countMap[m.organization_id] = (countMap[m.organization_id] ?? 0) + 1
   }
 
-  return clinics.map((c: any) => ({ ...c, memberCount: countMap[c.id] ?? 0 }))
+  return orgs.map((o: any) => ({ ...o, memberCount: countMap[o.id] ?? 0 }))
 }
 
 function daysLeft(iso: string | null) {

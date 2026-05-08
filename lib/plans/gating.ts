@@ -6,7 +6,6 @@
 // ============================================================
 
 import { createClient } from '@/lib/supabase/server'
-import type { Clinic } from '@/types/database'
 import {
   PLAN_CONFIG,
   SOFT_BLOCK_THRESHOLD,
@@ -42,23 +41,21 @@ export interface UsageGateResult {
 // Core subscription fetch (single query, reuse across helpers)
 // ─────────────────────────────────────────
 
-export async function getClinicSubscription(clinicId: string): Promise<ClinicSubscription | null> {
+export async function getClinicSubscription(organizationId: string): Promise<ClinicSubscription | null> {
   const supabase = await createClient()
-  // select('*') + cast avoids Supabase TS deferred-conditional on column subsets
-  const { data: raw } = await supabase
-    .from('clinics')
-    .select('*')
-    .eq('id', clinicId)
+  const { data } = await supabase
+    .from('organizations')
+    .select('plan, subscription_status, trial_ends_at, current_period_end')
+    .eq('id', organizationId)
     .single()
 
-  if (!raw) return null
-  const data = raw as Clinic
+  if (!data) return null
 
   return {
-    plan: data.plan ?? 'trial',
-    status: data.subscription_status ?? 'trialing',
-    trial_ends_at: data.trial_ends_at ?? null,
-    current_period_end: data.current_period_end ?? null,
+    plan: (data as any).plan ?? 'trial',
+    status: (data as any).subscription_status ?? 'trialing',
+    trial_ends_at: (data as any).trial_ends_at ?? null,
+    current_period_end: (data as any).current_period_end ?? null,
   }
 }
 
@@ -89,8 +86,8 @@ export function trialDaysRemaining(sub: ClinicSubscription): number {
 // Plan limits
 // ─────────────────────────────────────────
 
-export async function getPlanLimits(clinicId: string): Promise<PlanLimits> {
-  const sub = await getClinicSubscription(clinicId)
+export async function getPlanLimits(organizationId: string): Promise<PlanLimits> {
+  const sub = await getClinicSubscription(organizationId)
   if (!sub || !isSubscriptionActive(sub)) return PLAN_CONFIG.trial
   return PLAN_CONFIG[sub.plan]
 }
@@ -99,8 +96,8 @@ export async function getPlanLimits(clinicId: string): Promise<PlanLimits> {
 // Feature flag check
 // ─────────────────────────────────────────
 
-export async function isFeatureAllowed(clinicId: string, feature: PlanFeature): Promise<boolean> {
-  const limits = await getPlanLimits(clinicId)
+export async function isFeatureAllowed(organizationId: string, feature: PlanFeature): Promise<boolean> {
+  const limits = await getPlanLimits(organizationId)
   return (limits.features as readonly string[]).includes(feature)
 }
 
@@ -119,11 +116,11 @@ function getLimitForResource(limits: PlanLimits, resource: UsageResource): numbe
 }
 
 export async function checkUsageGate(
-  clinicId: string,
+  organizationId: string,
   resource: UsageResource,
   currentCount: number
 ): Promise<UsageGateResult> {
-  const sub = await getClinicSubscription(clinicId)
+  const sub = await getClinicSubscription(organizationId)
 
   // Hard block: no subscription or expired
   if (!sub || !isSubscriptionActive(sub)) {
@@ -204,10 +201,10 @@ export function computePlanStatus(
 }
 
 export async function getClinicPlanStatus(
-  clinicId: string,
+  organizationId: string,
   currentUsage: { leads: number; appointments: number; users: number }
 ): Promise<ClinicPlanStatus> {
-  const sub = await getClinicSubscription(clinicId)
+  const sub = await getClinicSubscription(organizationId)
   const fallback: ClinicSubscription = {
     plan: 'trial',
     status: 'trialing',

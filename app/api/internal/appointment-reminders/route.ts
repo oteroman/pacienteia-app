@@ -96,27 +96,16 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  // Resolve clinic by UUID or slug
+  // Resolve org by UUID or slug
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   const isUUID = uuidPattern.test(clinicParam)
-  const { data: clinic } = await sb.from('clinics').select('id, name').eq(isUUID ? 'id' : 'slug', clinicParam).single()
+  const { data: clinic } = await sb.from('organizations').select('id, name').eq(isUUID ? 'id' : 'slug', clinicParam).single()
 
   if (!clinic) {
-    return NextResponse.json({ error: 'clinic_not_found' }, { status: 404 })
+    return NextResponse.json({ error: 'org_not_found' }, { status: 404 })
   }
 
   const { start, end, dateLabel } = dateParam ? parseDateInLima(dateParam) : tomorrowInLima()
-
-  // Log workflow run start
-  const { data: runRow } = await sb.from('workflow_runs').insert({
-    clinic_id:   clinic.id,
-    event_type:  'appointment_reminders',
-    entity_type: 'clinic',
-    entity_id:   clinic.id,
-    status:      'running',
-    payload:     { date: dateLabel, start, end },
-  }).select('id').single()
-  const runId: string | null = runRow?.id ?? null
 
   // Fetch tomorrow's scheduled appointments with patient + doctor data
   const { data: rows, error } = await sb
@@ -129,7 +118,7 @@ export async function GET(req: NextRequest) {
       patients ( id, full_name, phone ),
       profiles:assigned_staff_id ( full_name )
     `)
-    .eq('clinic_id', clinic.id)
+    .eq('organization_id', clinic.id)
     .eq('status', 'scheduled')
     .gte('scheduled_at', start)
     .lt('scheduled_at', end)
@@ -137,9 +126,6 @@ export async function GET(req: NextRequest) {
     .order('scheduled_at', { ascending: true })
 
   if (error) {
-    if (runId) {
-      await sb.from('workflow_runs').update({ status: 'failed', error: error.message, completed_at: new Date().toISOString() }).eq('id', runId)
-    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -171,21 +157,11 @@ export async function GET(req: NextRequest) {
     }
   })
 
-  // Update workflow run to success
-  if (runId) {
-    await sb.from('workflow_runs').update({
-      status:       'success',
-      result:       { count: appointments.length },
-      completed_at: new Date().toISOString(),
-    }).eq('id', runId)
-  }
-
   return NextResponse.json({
-    date:           dateLabel,
-    clinicId:       clinic.id,
-    clinicName:     clinic.name,
-    count:          appointments.length,
+    date:          dateLabel,
+    organizationId: clinic.id,
+    organizationName: clinic.name,
+    count:         appointments.length,
     appointments,
-    workflowRunId:  runId,
   })
 }

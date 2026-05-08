@@ -13,11 +13,11 @@ import type { Patient } from '@/types/database'
 interface AppointmentFormProps {
   defaultDate?: string
   defaultPatientId?: string
-  clinicId: string
+  organizationId: string
   action: (data: AppointmentFormValues) => Promise<{ error: string } | undefined>
 }
 
-export function AppointmentForm({ defaultDate, defaultPatientId, clinicId, action }: AppointmentFormProps) {
+export function AppointmentForm({ defaultDate, defaultPatientId, organizationId, action }: AppointmentFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [patientSearch, setPatientSearch] = useState('')
@@ -56,7 +56,7 @@ export function AppointmentForm({ defaultDate, defaultPatientId, clinicId, actio
       const { data } = await createClient()
         .from('patients')
         .select('*')
-        .eq('clinic_id', clinicId)
+        .eq('organization_id', organizationId)
         .is('deleted_at', null)
         .or(`full_name.ilike.%${q}%,phone.ilike.%${q}%,dni.ilike.%${q}%`)
         .limit(8)

@@ -5,15 +5,15 @@ import type { Plan } from '@/lib/plans/config'
 
 // ── Types ────────────────────────────────────────────────
 type EventRow = {
-  clinic_id:   string
-  event:       string
-  resource:    string | null
-  gate_state:  string | null
-  source_page: string | null
-  created_at:  string
+  organization_id: string
+  event:           string
+  resource:        string | null
+  gate_state:      string | null
+  source_page:     string | null
+  created_at:      string
 }
 
-type ClinicRow = {
+type OrgRow = {
   id:                  string
   name:                string
   plan:                string | null
@@ -21,10 +21,10 @@ type ClinicRow = {
 }
 
 type UsageRow = {
-  clinic_id:          string
-  leads_count:        number
-  appointments_count: number
-  active_users:       number
+  organization_id: string
+  leads:           number
+  appointments:    number
+  active_users:    number
 }
 
 // ── Helpers ──────────────────────────────────────────────
@@ -52,30 +52,30 @@ export default async function AdminDashboardPage({
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-  // Fetch last 7 days of events, all clinics
+  // Fetch last 7 days of events, all orgs
   const { data: rawEvents } = await supabase
     .from('gating_events')
-    .select('clinic_id, event, resource, gate_state, source_page, created_at')
+    .select('organization_id, event, resource, gate_state, source_page, created_at')
     .gte('created_at', sevenDaysAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(2000)
 
-  const events = (rawEvents ?? []) as EventRow[]
-  const clinicIds = [...new Set(events.map((e) => e.clinic_id))]
+  const events = (rawEvents ?? []) as unknown as EventRow[]
+  const orgIds = [...new Set(events.map((e) => e.organization_id))]
 
-  // Clinic metadata + usage (parallel, skip if no events)
-  const [rawClinics, rawUsage] = clinicIds.length > 0
+  // Org metadata + usage (parallel, skip if no events)
+  const [rawOrgs, rawUsage] = orgIds.length > 0
     ? await Promise.all([
-        supabase.from('clinics').select('id, name, plan, subscription_status').in('id', clinicIds),
-        supabase.from('subscription_usage').select('clinic_id, leads_count, appointments_count, active_users').in('clinic_id', clinicIds).eq('period_start', periodStart()),
+        supabase.from('organizations').select('id, name, plan, subscription_status').in('id', orgIds),
+        supabase.from('subscription_usage').select('organization_id, leads, appointments, active_users').in('organization_id', orgIds).eq('period_start', periodStart()),
       ])
     : [{ data: [] }, { data: [] }]
 
-  const clinicMap = new Map<string, ClinicRow>(
-    ((rawClinics.data ?? []) as ClinicRow[]).map((c) => [c.id, c])
+  const clinicMap = new Map<string, OrgRow>(
+    ((rawOrgs.data ?? []) as unknown as OrgRow[]).map((c) => [c.id, c])
   )
   const usageMap = new Map<string, UsageRow>(
-    ((rawUsage.data ?? []) as UsageRow[]).map((u) => [u.clinic_id, u])
+    ((rawUsage.data ?? []) as unknown as UsageRow[]).map((u) => [u.organization_id, u])
   )
 
   // ── Aggregates ───────────────────────────────────────
@@ -84,8 +84,8 @@ export default async function AdminDashboardPage({
   const primary   = events.filter((e) => e.event === 'cta_primary_clicked')
   const secondary = events.filter((e) => e.event === 'cta_secondary_clicked')
 
-  const softClinicIds = new Set(blocked.filter((e) => e.gate_state === 'soft_blocked').map((e) => e.clinic_id))
-  const hardClinicIds = new Set(blocked.filter((e) => e.gate_state === 'hard_blocked').map((e) => e.clinic_id))
+  const softClinicIds = new Set(blocked.filter((e) => e.gate_state === 'soft_blocked').map((e) => e.organization_id))
+  const hardClinicIds = new Set(blocked.filter((e) => e.gate_state === 'hard_blocked').map((e) => e.organization_id))
 
   // ── By resource ──────────────────────────────────────
   const resources = ['leads', 'appointments', 'users'] as const
@@ -112,7 +112,7 @@ export default async function AdminDashboardPage({
 
   // ── Top clinics by friction ──────────────────────────
   const clinicBlockMap = blocked.reduce<Record<string, number>>((acc, e) => {
-    acc[e.clinic_id] = (acc[e.clinic_id] ?? 0) + 1
+    acc[e.organization_id] = (acc[e.organization_id] ?? 0) + 1
     return acc
   }, {})
   const topClinics = Object.entries(clinicBlockMap)
@@ -127,7 +127,7 @@ export default async function AdminDashboardPage({
 
   // ── Upgrade candidates ───────────────────────────────
   const clinicCtaMap = primary.reduce<Record<string, number>>((acc, e) => {
-    acc[e.clinic_id] = (acc[e.clinic_id] ?? 0) + 1
+    acc[e.organization_id] = (acc[e.organization_id] ?? 0) + 1
     return acc
   }, {})
 
@@ -140,10 +140,10 @@ export default async function AdminDashboardPage({
       const isHard  = hardClinicIds.has(id)
       const hasCta  = (clinicCtaMap[id] ?? 0) > 0
       const blocks7d = clinicBlockMap[id] ?? 0
-      const lastEvent = events.find((e) => e.clinic_id === id)?.created_at ?? null
+      const lastEvent = events.find((e) => e.organization_id === id)?.created_at ?? null
 
-      const leadsUsed  = usage?.leads_count ?? 0
-      const aptUsed    = usage?.appointments_count ?? 0
+      const leadsUsed  = usage?.leads ?? 0
+      const aptUsed    = usage?.appointments ?? 0
       const leadsLimit = limits.leads_per_month
       const aptLimit   = limits.appointments_per_month
       const leadsPct   = leadsLimit > 0 ? pct(leadsUsed, leadsLimit) : 0

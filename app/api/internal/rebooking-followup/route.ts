@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   // Find all tomorrow-scheduled appointments still in 'scheduled' status (not confirmed, not cancelled)
   const { data: rows, error } = await sb
     .from('appointments')
-    .select('id, clinic_id, patient_id, treatment_type, scheduled_at, patients ( full_name, phone )')
+    .select('id, organization_id, patient_id, treatment_type, scheduled_at, patients ( full_name, phone )')
     .eq('status', 'scheduled')
     .gte('scheduled_at', start)
     .lt('scheduled_at', end)
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   }
 
   type ApptRow = {
-    id: string; clinic_id: string; patient_id: string | null
+    id: string; organization_id: string; patient_id: string | null
     treatment_type: string; scheduled_at: string
     patients: { full_name: string; phone: string | null } | null
   }
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
   for (const appt of (rows as ApptRow[])) {
     const result = await triggerRebooking({
-      clinicId:       appt.clinic_id,
+      organizationId: appt.organization_id,
       appointmentId:  appt.id,
       patientId:      appt.patient_id,
       patientName:    appt.patients?.full_name ?? 'Paciente',

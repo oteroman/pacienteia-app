@@ -17,7 +17,7 @@ function pct(num: number, den: number) {
 
 export default async function AnalyticsPage() {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const supabase = await createClient()
   const thirtyDaysAgo = new Date()
@@ -26,7 +26,7 @@ export default async function AnalyticsPage() {
   const { data } = await supabase
     .from('gating_events')
     .select('event, resource, gate_state, operation, source_page, created_at')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gte('created_at', thirtyDaysAgo.toISOString())
     .order('created_at', { ascending: false })
     .limit(500)

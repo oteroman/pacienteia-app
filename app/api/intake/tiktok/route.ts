@@ -58,13 +58,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'missing_clinic_id' }, { status: 400 })
   }
 
-  // Validate clinic
+  // Validate org
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
-  const { data: clinic } = await sb.from('clinics').select('id').eq('id', clinic_id).single()
+  const { data: clinic } = await sb.from('organizations').select('id').eq('id', clinic_id).single()
   if (!clinic) {
-    return NextResponse.json({ error: 'clinic_not_found' }, { status: 404 })
+    return NextResponse.json({ error: 'org_not_found' }, { status: 404 })
   }
+
+  const { data: branch } = await sb
+    .from('branches').select('id')
+    .eq('organization_id', clinic_id).is('deleted_at', null)
+    .order('created_at', { ascending: true }).limit(1).single()
 
   // Deduplicate by external_id
   if (typeof lead_id === 'string') {
@@ -100,8 +105,9 @@ export async function POST(req: NextRequest) {
   ].filter(Boolean).join('\n') || 'Lead de TikTok sin datos adicionales'
 
   const intakeId = await processIntake({
-    clinicId:     clinic_id,
-    channel:      'tiktok',
+    organizationId: clinic_id,
+    branchId:       branch?.id ?? clinic_id,
+    channel:        'tiktok',
     externalId:   typeof lead_id === 'string' ? lead_id : undefined,
     contactName:  contactName   ?? undefined,
     contactPhone: contactPhone  ?? undefined,

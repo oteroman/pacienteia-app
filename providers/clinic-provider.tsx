@@ -1,10 +1,18 @@
 'use client'
 
 import { createContext, useContext } from 'react'
-import type { Clinic, ClinicRole } from '@/types/database'
 
-export interface ActiveClinic extends Clinic {
-  role: ClinicRole
+export interface ActiveClinic {
+  id: string
+  name: string
+  slug: string
+  plan: string | null
+  subscription_status: string | null
+  trial_ends_at: string | null
+  current_period_end: string | null
+  industry: string | null
+  role: string
+  [key: string]: unknown
 }
 
 interface ClinicContextValue {

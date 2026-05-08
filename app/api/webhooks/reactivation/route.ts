@@ -12,12 +12,11 @@ function authorized(req: NextRequest): boolean {
 }
 
 type ReactivationBody = {
-  clinic_id: string
-  patient_id: string
-  step: 1 | 2
-  // action: what n8n determined from the patient's reply
-  action: 'responded' | 'scheduled' | 'ignored' | 'create_step1' | 'create_step2'
-  notes?: string
+  organization_id: string
+  patient_id:      string
+  step:            1 | 2
+  action:          'responded' | 'scheduled' | 'ignored' | 'create_step1' | 'create_step2'
+  notes?:          string
 }
 
 export async function POST(req: NextRequest) {
@@ -32,9 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { clinic_id, patient_id, step, action, notes } = body
-  if (!clinic_id || !patient_id || !action) {
-    return NextResponse.json({ error: 'clinic_id, patient_id, action required' }, { status: 400 })
+  const { organization_id, patient_id, step, action, notes } = body
+  if (!organization_id || !patient_id || !action) {
+    return NextResponse.json({ error: 'organization_id, patient_id, action required' }, { status: 400 })
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,15 +41,14 @@ export async function POST(req: NextRequest) {
 
   // CREATE: n8n creates a new campaign entry when it sends a message
   if (action === 'create_step1' || action === 'create_step2') {
-    const insertData: TablesInsert<'reactivation_campaigns'> = {
-      clinic_id,
+    const { data, error } = await supabase.from('reactivation_campaigns').insert({
+      organization_id,
       patient_id,
-      step: action === 'create_step1' ? 1 : 2,
-      status: 'sent',
+      step:    action === 'create_step1' ? 1 : 2,
+      status:  'sent',
       sent_at: new Date().toISOString(),
-      notes: notes ?? null,
-    }
-    const { data, error } = await supabase.from('reactivation_campaigns').insert(insertData).select().single()
+      notes:   notes ?? null,
+    } as unknown as TablesInsert<'reactivation_campaigns'>).select().single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ id: data.id }, { status: 201 })
   }
@@ -68,7 +66,7 @@ export async function POST(req: NextRequest) {
   const { error: updateErr } = await supabase
     .from('reactivation_campaigns')
     .update(updatePayload)
-    .eq('clinic_id', clinic_id)
+    .eq('organization_id', organization_id)
     .eq('patient_id', patient_id)
     .eq('step', step)
     .eq('status', 'sent')

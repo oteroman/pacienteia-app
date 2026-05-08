@@ -11,7 +11,7 @@ interface PageProps {
 
 export default async function AppointmentsPage({ searchParams }: PageProps) {
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const { year, month } = await searchParams
   const now = new Date()
@@ -25,7 +25,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps) {
   const { data } = await supabase
     .from('appointments')
     .select('*, patients(full_name)')
-    .eq('clinic_id', clinicId)
+    .eq('organization_id', clinicId)
     .gte('scheduled_at', startDate)
     .lte('scheduled_at', endDate)
     .order('scheduled_at')

@@ -58,7 +58,7 @@ const PRIORITY_ORDER: Record<CopilotTaskPriority, number> = { high: 0, medium: 1
 
 // ── Raw DB row types ──────────────────────────────────────────
 type IntRow = {
-  id: string; clinic_id: string; source_type: string; raw_content: string
+  id: string; organization_id: string; source_type: string; raw_content: string
   patient_id: string | null; status: string; created_at: string
   interaction_summaries: {
     summary: string; commitments: unknown[]; risks: unknown[]; tasks_created: number
@@ -67,7 +67,7 @@ type IntRow = {
 }
 
 type TaskRow = {
-  id: string; interaction_id: string; clinic_id: string; patient_id: string | null
+  id: string; interaction_id: string; organization_id: string; patient_id: string | null
   title: string; description: string | null; priority: string; status: string
   due_date: string | null; resolved_at: string | null; created_at: string
   interactions: { source_type: string } | null
@@ -84,15 +84,18 @@ export async function fetchCopilotDashboard(clinicId: string): Promise<CopilotDa
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  const [intRes, taskRes] = await Promise.all([
-    sb.from('interactions')
-      .select('*, interaction_summaries(summary, commitments, risks, tasks_created), patients(full_name)')
-      .eq('clinic_id', clinicId)
-      .order('created_at', { ascending: false })
-      .limit(20),
+  // TODO: interactions table removed
+  // const intRes = await sb.from('interactions')
+  //   .select('*, interaction_summaries(summary, commitments, risks, tasks_created), patients(full_name)')
+  //   .eq('organization_id', clinicId)
+  //   .order('created_at', { ascending: false })
+  //   .limit(20)
+  const intRes = { data: null }
+
+  const [taskRes] = await Promise.all([
     sb.from('copilot_tasks')
-      .select('*, interactions(source_type), patients(full_name)')
-      .eq('clinic_id', clinicId)
+      .select('*, patients(full_name)')
+      .eq('organization_id', clinicId)
       .eq('status', 'open')
       .order('created_at', { ascending: false })
       .limit(50),
@@ -100,7 +103,7 @@ export async function fetchCopilotDashboard(clinicId: string): Promise<CopilotDa
 
   const interactions: Interaction[] = ((intRes.data ?? []) as IntRow[]).map((r) => ({
     id:           r.id,
-    clinicId:     r.clinic_id,
+    clinicId:     r.organization_id,
     sourceType:   r.source_type as SourceType,
     rawContent:   r.raw_content,
     patientId:    r.patient_id,
@@ -117,7 +120,7 @@ export async function fetchCopilotDashboard(clinicId: string): Promise<CopilotDa
     .map((r) => ({
       id:            r.id,
       interactionId: r.interaction_id,
-      clinicId:      r.clinic_id,
+      clinicId:      r.organization_id,
       patientId:     r.patient_id,
       patientName:   r.patients?.full_name ?? null,
       sourceType:    (r.interactions?.source_type ?? 'staff_note') as SourceType,

@@ -153,13 +153,13 @@ export async function syncValueSignalTasks(
   // Fetch existing open tasks for auto-task trigger types to avoid duplicates
   const { data: existingRaw } = await sb
     .from('clinic_tasks')
-    .select('clinic_id, trigger_type')
+    .select('organization_id, trigger_type')
     .eq('status', 'open')
     .in('trigger_type', ['upgrade_ready_value', 'renewal_risk_severe'])
 
   const existing = new Set<string>(
-    ((existingRaw ?? []) as { clinic_id: string; trigger_type: string }[])
-      .map((r) => `${r.clinic_id}:${r.trigger_type}`)
+    ((existingRaw ?? []) as { organization_id: string; trigger_type: string }[])
+      .map((r) => `${r.organization_id}:${r.trigger_type}`)
   )
 
   const toInsert: object[] = []
@@ -175,7 +175,7 @@ export async function syncValueSignalTasks(
 
       const pb = SIGNAL_PLAYBOOKS[signal.type]
       toInsert.push({
-        clinic_id:        clinic.clinicId,
+        organization_id:  clinic.clinicId,
         trigger_type:     triggerType,
         status:           'open',
         priority:         pb.priority === 'critical' ? 'high' : pb.priority,
