@@ -31,7 +31,11 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   // Determine routing after successful login
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Platform admins go directly to /platform, skip clinic flow entirely
+  // Platform admins go directly to /platform — check JWT app_metadata first (no DB call),
+  // then fall back to profiles table for users migrated before app_metadata was set
+  const roleFromJwt = user?.app_metadata?.platform_role
+  if (roleFromJwt) redirect('/platform')
+
   const sb = createAdminClient() as any
   const { data: profile } = await sb
     .from('profiles')
