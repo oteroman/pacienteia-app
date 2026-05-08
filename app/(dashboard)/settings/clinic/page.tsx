@@ -125,7 +125,7 @@ export default async function ClinicSettingsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Sitio web">
-              <input name="website" type="url" defaultValue={profile?.website ?? ''}
+              <input name="website" type="text" defaultValue={profile?.website ?? ''}
                 placeholder="https://clinicabella.pe" className={inputCls} />
             </Field>
             <Field label="Instagram">

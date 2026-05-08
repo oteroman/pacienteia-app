@@ -79,8 +79,8 @@ export async function upsertClinicProfile(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  await sb.from('organization_profiles').upsert({
-    organization_id:         clinicId,
+  const { error } = await sb.from('organization_profiles').upsert({
+    organization_id:   clinicId,
     brand_name:        fields.brandName        ?? null,
     brand_tone:        fields.brandTone        ?? 'professional',
     brand_tone_notes:  fields.brandToneNotes   ?? null,
@@ -94,6 +94,8 @@ export async function upsertClinicProfile(
     instagram_handle:  fields.instagramHandle  ?? null,
     updated_at:        new Date().toISOString(),
   }, { onConflict: 'organization_id' })
+
+  if (error) throw new Error(`upsertClinicProfile: ${error.message}`)
 }
 
 // ── Serializable DTO for client components ────────────────────
