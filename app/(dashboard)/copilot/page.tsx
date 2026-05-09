@@ -19,18 +19,33 @@ const PRIORITY_COLOR: Record<CopilotTaskPriority, string> = {
   low:    'bg-gray-100 text-gray-600',
 }
 
-export default async function CopilotPage() {
+export default async function CopilotPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ analizado?: string; tareas?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const clinicId = await getActiveClinicId()
-  if (!clinicId) redirect('/clinic-selector')
+  if (!clinicId) redirect('/org-selector')
 
   const { interactions, openTasks } = await fetchCopilotDashboard(clinicId)
+  const params = await searchParams
+  const tareasCount = params.tareas ? parseInt(params.tareas, 10) : 0
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+
+      {/* Success banner */}
+      {params.analizado === '1' && (
+        <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+          {tareasCount > 0
+            ? `Interacción analizada. Se generaron ${tareasCount} tarea${tareasCount > 1 ? 's' : ''} nuevas.`
+            : 'Interacción analizada. No se detectaron tareas pendientes.'}
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
