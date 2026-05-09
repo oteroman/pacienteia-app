@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export interface ProcessResult {
   summary:     string
@@ -6,8 +6,6 @@ export interface ProcessResult {
   risks:       string[]
   tasks:       { title: string; description: string; priority: 'high' | 'medium' | 'low' }[]
 }
-
-const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Eres un asistente de operaciones para clínicas estéticas en Lima, Perú.
 Analiza el siguiente mensaje o nota de staff y extrae información estructurada.
@@ -35,20 +33,25 @@ Guías:
 - Responde siempre en español`
 
 export async function processInteraction(rawContent: string): Promise<ProcessResult> {
-  const message = await client.messages.create({
-    model:      'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    system:     SYSTEM_PROMPT,
-    messages:   [{ role: 'user', content: rawContent }],
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY no configurada')
+
+  const model = process.env.GEMINI_MODEL_NAME ?? 'gemini-2.0-flash-lite'
+
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const gemini = genAI.getGenerativeModel({
+    model,
+    systemInstruction: SYSTEM_PROMPT,
   })
 
-  const text = message.content
-    .filter((b) => b.type === 'text')
-    .map((b) => (b as { type: 'text'; text: string }).text)
-    .join('')
+  const result = await gemini.generateContent(rawContent)
+  const text = result.response.text().trim()
+
+  // Strip markdown code fences if present
+  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
 
   try {
-    const parsed = JSON.parse(text) as ProcessResult
+    const parsed = JSON.parse(clean) as ProcessResult
     return {
       summary:     parsed.summary     ?? '',
       commitments: Array.isArray(parsed.commitments) ? parsed.commitments : [],
@@ -57,7 +60,7 @@ export async function processInteraction(rawContent: string): Promise<ProcessRes
     }
   } catch {
     return {
-      summary:     text.slice(0, 500),
+      summary:     clean.slice(0, 500),
       commitments: [],
       risks:       [],
       tasks:       [],
