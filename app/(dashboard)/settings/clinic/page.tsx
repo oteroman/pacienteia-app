@@ -8,7 +8,12 @@ import { saveClinicProfile }  from '@/app/actions/clinic-profile'
 
 const TONES: BrandTone[] = ['casual', 'professional', 'formal', 'warm']
 
-export default async function ClinicSettingsPage() {
+export default async function ClinicSettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ guardado?: string }>
+}) {
+  const { guardado } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -27,6 +32,12 @@ export default async function ClinicSettingsPage() {
           Estos datos se usan en las plantillas de respuesta y borradores IA.
         </p>
       </div>
+
+      {guardado === '1' && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 font-medium">
+          Cambios guardados correctamente.
+        </div>
+      )}
 
       <form action={saveClinicProfile} className="space-y-6">
 
@@ -146,13 +157,6 @@ export default async function ClinicSettingsPage() {
 
       </form>
 
-      {/* Preview of how auto-fill works */}
-      {profile?.defaultSignature && (
-        <div className="rounded-2xl border bg-gray-50 p-4 space-y-1">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Vista previa de firma</p>
-          <p className="text-sm text-gray-600 italic">{profile.defaultSignature}</p>
-        </div>
-      )}
 
     </div>
   )

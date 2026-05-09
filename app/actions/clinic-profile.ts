@@ -1,10 +1,11 @@
 'use server'
 
-import { revalidatePath }    from 'next/cache'
-import { createClient }      from '@/lib/supabase/server'
-import { getActiveClinicId } from '@/lib/tenant/active-clinic'
+import { revalidatePath }      from 'next/cache'
+import { redirect }            from 'next/navigation'
+import { createClient }        from '@/lib/supabase/server'
+import { getActiveClinicId }   from '@/lib/tenant/active-clinic'
 import { upsertClinicProfile } from '@/lib/clinic/profile'
-import type { BrandTone }    from '@/lib/clinic/profile'
+import type { BrandTone }      from '@/lib/clinic/profile'
 
 export async function saveClinicProfile(formData: FormData): Promise<void> {
   const supabase = await createClient()
@@ -30,4 +31,5 @@ export async function saveClinicProfile(formData: FormData): Promise<void> {
 
   revalidatePath('/settings/clinic')
   revalidatePath('/inbox')
+  redirect('/settings/clinic?guardado=1')
 }
