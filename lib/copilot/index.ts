@@ -76,63 +76,50 @@ type TaskRow = {
 
 // ── Fetch ─────────────────────────────────────────────────────
 export interface CopilotDashboardData {
-  interactions: Interaction[]
-  openTasks:    CopilotTask[]
+  openTasks:  CopilotTask[]
+  doneTasks:  CopilotTask[]
 }
 
 export async function fetchCopilotDashboard(clinicId: string): Promise<CopilotDashboardData> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  // TODO: interactions table removed
-  // const intRes = await sb.from('interactions')
-  //   .select('*, interaction_summaries(summary, commitments, risks, tasks_created), patients(full_name)')
-  //   .eq('organization_id', clinicId)
-  //   .order('created_at', { ascending: false })
-  //   .limit(20)
-  const intRes = { data: null }
-
-  const [taskRes] = await Promise.all([
+  const [openRes, doneRes] = await Promise.all([
     sb.from('copilot_tasks')
       .select('*, patients(full_name)')
       .eq('organization_id', clinicId)
       .eq('status', 'open')
       .order('created_at', { ascending: false })
       .limit(50),
+    sb.from('copilot_tasks')
+      .select('*, patients(full_name)')
+      .eq('organization_id', clinicId)
+      .in('status', ['done', 'dismissed'])
+      .order('resolved_at', { ascending: false })
+      .limit(20),
   ])
 
-  const interactions: Interaction[] = ((intRes.data ?? []) as IntRow[]).map((r) => ({
-    id:           r.id,
-    clinicId:     r.organization_id,
-    sourceType:   r.source_type as SourceType,
-    rawContent:   r.raw_content,
-    patientId:    r.patient_id,
-    patientName:  r.patients?.full_name ?? null,
-    status:       r.status as InteractionStatus,
-    summary:      r.interaction_summaries?.summary ?? null,
-    commitments:  (r.interaction_summaries?.commitments ?? []) as string[],
-    risks:        (r.interaction_summaries?.risks ?? []) as string[],
-    tasksCreated: r.interaction_summaries?.tasks_created ?? 0,
-    createdAt:    r.created_at,
-  }))
+  const mapTask = (r: TaskRow): CopilotTask => ({
+    id:            r.id,
+    interactionId: r.interaction_id,
+    clinicId:      r.organization_id,
+    patientId:     r.patient_id,
+    patientName:   r.patients?.full_name ?? null,
+    sourceType:    (r.interactions?.source_type ?? 'staff_note') as SourceType,
+    title:         r.title,
+    description:   r.description,
+    priority:      r.priority as CopilotTaskPriority,
+    status:        r.status as CopilotTaskStatus,
+    dueDate:       r.due_date,
+    resolvedAt:    r.resolved_at,
+    createdAt:     r.created_at,
+  })
 
-  const openTasks: CopilotTask[] = ((taskRes.data ?? []) as TaskRow[])
-    .map((r) => ({
-      id:            r.id,
-      interactionId: r.interaction_id,
-      clinicId:      r.organization_id,
-      patientId:     r.patient_id,
-      patientName:   r.patients?.full_name ?? null,
-      sourceType:    (r.interactions?.source_type ?? 'staff_note') as SourceType,
-      title:         r.title,
-      description:   r.description,
-      priority:      r.priority as CopilotTaskPriority,
-      status:        r.status as CopilotTaskStatus,
-      dueDate:       r.due_date,
-      resolvedAt:    r.resolved_at,
-      createdAt:     r.created_at,
-    }))
+  const openTasks = ((openRes.data ?? []) as TaskRow[])
+    .map(mapTask)
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
 
-  return { interactions, openTasks }
+  const doneTasks = ((doneRes.data ?? []) as TaskRow[]).map(mapTask)
+
+  return { openTasks, doneTasks }
 }

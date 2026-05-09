@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { fetchCopilotDashboard } from '@/lib/copilot/index'
 import { SOURCE_LABELS, SOURCE_COLORS } from '@/lib/copilot/index'
-import type { Interaction, CopilotTask, CopilotTaskPriority } from '@/lib/copilot/index'
+import type { CopilotTask, CopilotTaskPriority } from '@/lib/copilot/index'
 import { resolveTask, dismissTask } from '@/app/actions/copilot'
 
 const PRIORITY_LABEL: Record<CopilotTaskPriority, string> = {
@@ -31,7 +31,7 @@ export default async function CopilotPage({
   const clinicId = await getActiveClinicId()
   if (!clinicId) redirect('/org-selector')
 
-  const { interactions, openTasks } = await fetchCopilotDashboard(clinicId)
+  const { openTasks, doneTasks } = await fetchCopilotDashboard(clinicId)
   const params = await searchParams
   const tareasCount = params.tareas ? parseInt(params.tareas, 10) : 0
 
@@ -89,24 +89,27 @@ export default async function CopilotPage({
         )}
       </section>
 
-      {/* Recent interactions */}
-      <section>
-        <h2 className="text-base font-semibold text-gray-800 mb-3">
-          Interacciones recientes
-        </h2>
+      {/* Done tasks — collapsible */}
+      {doneTasks.length > 0 && (
+        <section>
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer list-none select-none mb-3">
+              <span className="text-base font-semibold text-gray-800">Completadas e ignoradas</span>
+              <span className="text-xs font-normal bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                {doneTasks.length}
+              </span>
+              <span className="ml-auto text-xs text-gray-400 group-open:hidden">Ver historial ▾</span>
+              <span className="ml-auto text-xs text-gray-400 hidden group-open:inline">Ocultar ▴</span>
+            </summary>
 
-        {interactions.length === 0 ? (
-          <div className="rounded-2xl border bg-gray-50 p-8 text-center">
-            <p className="text-sm text-gray-400">Aún no hay interacciones registradas.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {interactions.map((i) => (
-              <InteractionCard key={i.id} interaction={i} />
-            ))}
-          </div>
-        )}
-      </section>
+            <div className="space-y-2">
+              {doneTasks.map((task) => (
+                <DoneTaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          </details>
+        </section>
+      )}
 
     </div>
   )
@@ -169,48 +172,45 @@ function TaskCard({ task }: { task: CopilotTask }) {
   )
 }
 
-function InteractionCard({ interaction: i }: { interaction: Interaction }) {
-  const date = new Date(i.createdAt).toLocaleDateString('es-PE', {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  })
-
-  const statusColor =
-    i.status === 'done'       ? 'text-green-600'  :
-    i.status === 'failed'     ? 'text-red-500'     :
-    i.status === 'processing' ? 'text-amber-500'   : 'text-gray-400'
+function DoneTaskCard({ task }: { task: CopilotTask }) {
+  const resolvedAt = task.resolvedAt
+    ? new Date(task.resolvedAt).toLocaleDateString('es-PE', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+      })
+    : null
 
   return (
-    <div className="rounded-xl border bg-white p-4 space-y-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${SOURCE_COLORS[i.sourceType]}`}>
-          {SOURCE_LABELS[i.sourceType]}
-        </span>
-        {i.patientName && (
-          <span className="text-xs text-gray-500">{i.patientName}</span>
-        )}
-        <span className="ml-auto text-[10px] text-gray-400">{date}</span>
-        <span className={`text-[10px] font-semibold capitalize ${statusColor}`}>{i.status}</span>
-      </div>
-
-      {i.summary ? (
-        <p className="text-sm text-gray-700">{i.summary}</p>
-      ) : (
-        <p className="text-sm text-gray-400 italic line-clamp-2">{i.rawContent}</p>
-      )}
-
-      {(i.commitments.length > 0 || i.risks.length > 0) && (
-        <div className="flex gap-4 text-xs text-gray-500">
-          {i.commitments.length > 0 && (
-            <span>{i.commitments.length} compromiso{i.commitments.length > 1 ? 's' : ''}</span>
+    <div className="rounded-xl border bg-gray-50 p-4 flex items-start gap-4 opacity-75">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          {task.status === 'done' ? (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+              Lista
+            </span>
+          ) : (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-500">
+              Ignorada
+            </span>
           )}
-          {i.risks.length > 0 && (
-            <span className="text-amber-600">{i.risks.length} riesgo{i.risks.length > 1 ? 's' : ''}</span>
+          {task.patientName && (
+            <span className="text-xs text-gray-400">{task.patientName}</span>
           )}
-          {i.tasksCreated > 0 && (
-            <span className="text-blue-600">{i.tasksCreated} tarea{i.tasksCreated > 1 ? 's' : ''} generadas</span>
+          {resolvedAt && (
+            <span className="ml-auto text-[10px] text-gray-400">{resolvedAt}</span>
           )}
         </div>
-      )}
+        <Link href={`/copilot/tasks/${task.id}`} className="block group mt-1">
+          <p className="text-sm font-medium text-gray-500 line-through group-hover:no-underline group-hover:text-brand-600 transition-colors">
+            {task.title}
+          </p>
+        </Link>
+      </div>
+      <Link
+        href={`/copilot/tasks/${task.id}`}
+        className="text-xs text-gray-400 bg-white hover:bg-gray-100 border px-3 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0"
+      >
+        Ver
+      </Link>
     </div>
   )
 }
