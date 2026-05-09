@@ -38,6 +38,26 @@ export async function createAppointment(data: AppointmentFormValues) {
   redirect('/appointments')
 }
 
+export async function updateAppointment(id: string, data: AppointmentFormValues) {
+  const { organizationId } = await getContext()
+  const parsed = appointmentSchema.safeParse(data)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+
+  const { notes, price, ...rest } = parsed.data
+  const supabase = await createClient()
+
+  const { error } = await mut(supabase)
+    .from('appointments')
+    .update({ ...rest, notes: notes || null, price: price ?? null })
+    .eq('id', id)
+    .eq('organization_id', organizationId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/appointments')
+  revalidatePath(`/appointments/${id}`)
+  redirect(`/appointments/${id}`)
+}
+
 export async function updateAppointmentStatus(id: string, status: AppointmentStatus) {
   const { organizationId } = await getContext()
   const supabase = await createClient()
@@ -50,6 +70,7 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
 
   if (error) return { error: error.message }
   revalidatePath('/appointments')
+  revalidatePath('/patients')
   revalidatePath('/dashboard')
 }
 
