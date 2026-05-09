@@ -132,12 +132,22 @@ function TaskCard({ task }: { task: CopilotTask }) {
             {SOURCE_LABELS[task.sourceType]}
           </span>
         </div>
-        <p className="text-sm font-semibold text-gray-800 mt-1">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
-        )}
+        <Link href={`/copilot/tasks/${task.id}`} className="block group mt-1">
+          <p className="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">
+            {task.title}
+          </p>
+          {task.description && (
+            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
+          )}
+        </Link>
       </div>
       <div className="flex gap-2 flex-shrink-0">
+        <Link
+          href={`/copilot/tasks/${task.id}`}
+          className="text-xs text-brand-600 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
+        >
+          Ver
+        </Link>
         <form action={resolveWithId}>
           <button
             type="submit"
