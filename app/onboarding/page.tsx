@@ -1,11 +1,12 @@
 'use client'
 
-import { useActionState }    from 'react'
-import { useSearchParams }   from 'next/navigation'
-import { Suspense }          from 'react'
+import { useActionState, useState } from 'react'
+import { useSearchParams }          from 'next/navigation'
+import { Suspense }                 from 'react'
 import {
   createOrganization,
   createBranch,
+  connectWhatsApp,
   markWhatsAppConnected,
   markFirstFlowActive,
 } from '@/app/actions/onboarding'
@@ -163,41 +164,239 @@ function Step2() {
 
 // ── Step 3: WhatsApp connection ─────────────────────────────────────────────
 
-function Step3() {
-  const [, action, pending] = useActionState(markWhatsAppConnected, null)
+const WEBHOOK_URL = 'https://app.pacienteia.com/api/whatsapp/webhook'
+
+const INPUT_BASE =
+  'w-full bg-gray-800 border rounded-xl px-4 py-2.5 text-sm text-white ' +
+  'placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition-colors'
+
+function IdInput({
+  id, name, placeholder, error, onBlur,
+}: {
+  id: string; name: string; placeholder: string
+  error?: string; onBlur: (v: string) => void
+}) {
   return (
-    <form action={action} className="space-y-5">
+    <input
+      id={id} name={name} type="text" required
+      placeholder={placeholder}
+      onBlur={(e) => onBlur(e.target.value)}
+      className={`${INPUT_BASE} ${error ? 'border-red-700' : 'border-gray-700'}`}
+    />
+  )
+}
+
+function EyeIcon({ open }: { open: boolean }) {
+  return open ? (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7
+           -1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  ) : (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round"
+        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7
+           a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243
+           M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29
+           M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7
+           a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+    </svg>
+  )
+}
+
+function FieldHint({ text }: { text: string }) {
+  return <p className="text-[11px] text-gray-600">{text}</p>
+}
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null
+  return <p className="text-[11px] text-red-400">{msg}</p>
+}
+
+const SUPPORT_WA = 'https://wa.me/51990180506?text=Hola%2C+necesito+ayuda+para+conectar+mi+WhatsApp+Business+a+PacienteIA'
+// Reemplaza este link cuando tengas el video tutorial grabado:
+const TUTORIAL_YT = 'https://www.youtube.com/results?search_query=conectar+whatsapp+business+api+meta+credenciales'
+
+function Step3() {
+  const [state,    connectAction, connecting] = useActionState(connectWhatsApp,      null)
+  const [,         skipAction,    skipping  ] = useActionState(markWhatsAppConnected, null)
+  const [showForm,  setShowForm]  = useState(false)
+  const [showToken, setShowToken] = useState(false)
+  const [errs, setErrs] = useState<Record<string, string>>({})
+
+  function validateId(field: string, value: string) {
+    const v = value.trim()
+    const msg = !v
+      ? 'Este campo es requerido'
+      : !/^\d{10,20}$/.test(v)
+        ? 'Debe ser un ID numérico (10–20 dígitos)'
+        : ''
+    setErrs((prev) => ({ ...prev, [field]: msg }))
+  }
+
+  function validateToken(value: string) {
+    setErrs((prev) => ({ ...prev, access_token: value.trim() ? '' : 'El Access Token es requerido' }))
+  }
+
+  return (
+    <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-white">Conecta WhatsApp</h1>
+        <h1 className="text-2xl font-bold text-white">Conecta WhatsApp Business</h1>
         <p className="text-sm text-gray-400 mt-1">
-          PacienteIA usa la API oficial de WhatsApp Business para enviar confirmaciones,
-          recordatorios y reactivaciones automáticamente.
+          Vincula tu número de WhatsApp Business para que PacienteIA atienda
+          automáticamente consultas, confirme citas y haga seguimiento.
         </p>
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 p-5 space-y-4">
-        <p className="text-sm font-semibold text-gray-200">Pasos para conectar:</p>
-        <ol className="space-y-3 text-sm text-gray-400 list-decimal list-inside">
-          <li>Crea una cuenta en <strong className="text-white">Meta Business Suite</strong></li>
-          <li>Activa <strong className="text-white">WhatsApp Business API</strong> para tu número</li>
-          <li>Genera un <strong className="text-white">Access Token permanente</strong></li>
-          <li>
-            Envía las credenciales a{' '}
-            <a href="mailto:soporte@pacienteia.com" className="text-brand-400 hover:underline">
-              soporte@pacienteia.com
-            </a>{' '}
-            — las configuramos en menos de 24 horas
-          </li>
-        </ol>
+      {/* ── Opciones de ayuda ───────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3">
+
+        {/* Opción 1: Tutorial YouTube */}
+        <a
+          href={TUTORIAL_YT}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col gap-1.5 bg-gray-900 border border-gray-700 hover:border-gray-500
+                     rounded-xl p-4 transition-colors group"
+        >
+          <span className="text-xl">▶️</span>
+          <span className="text-sm font-semibold text-white group-hover:text-brand-300 transition-colors">
+            Ver tutorial
+          </span>
+          <span className="text-[11px] text-gray-500 leading-snug">
+            Cómo obtener credenciales de Meta en 10 minutos
+          </span>
+        </a>
+
+        {/* Opción 2: Contactar soporte */}
+        <a
+          href={SUPPORT_WA}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col gap-1.5 bg-gray-900 border border-gray-700 hover:border-green-700
+                     rounded-xl p-4 transition-colors group"
+        >
+          <span className="text-xl">💬</span>
+          <span className="text-sm font-semibold text-white group-hover:text-green-400 transition-colors">
+            Hablar con soporte
+          </span>
+          <span className="text-[11px] text-gray-500 leading-snug">
+            Te ayudamos a configurarlo paso a paso vía WhatsApp
+          </span>
+        </a>
       </div>
 
-      <div className="bg-amber-950 border border-amber-900 rounded-xl px-4 py-3 text-sm text-amber-300">
-        Si ya tienes tu número configurado, haz clic en <strong>Continuar</strong> y
-        coordina con nuestro equipo para activar la integración.
+      {/* ── Separador ───────────────────────────────────── */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px bg-gray-800" />
+        <span className="text-xs text-gray-600">o si ya tienes las credenciales</span>
+        <div className="flex-1 h-px bg-gray-800" />
       </div>
 
-      <SubmitButton pending={pending}>Continuar →</SubmitButton>
-    </form>
+      {/* ── Toggle formulario ───────────────────────────── */}
+      {!showForm ? (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold
+                     text-sm px-5 py-3 rounded-xl transition-colors"
+        >
+          Ingresar credenciales →
+        </button>
+      ) : (
+        <div className="space-y-4">
+          {/* Webhook URL */}
+          <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-1.5">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+              URL de webhook — pégala en Meta Business Suite
+            </p>
+            <p className="text-sm font-mono text-brand-400 break-all select-all">{WEBHOOK_URL}</p>
+            <p className="text-[11px] text-gray-600">
+              Meta → WhatsApp → Configuración → Webhooks → URL de devolución de llamada
+            </p>
+          </div>
+
+          {/* Credentials form */}
+          <form action={connectAction} className="space-y-4">
+
+            <Field label="Phone Number ID" name="phone_number_id" required>
+              <IdInput
+                id="phone_number_id" name="phone_number_id"
+                placeholder="Ej. 123456789012345"
+                error={errs.phone_number_id}
+                onBlur={(v) => validateId('phone_number_id', v)}
+              />
+              <FieldError msg={errs.phone_number_id} />
+              <FieldHint text="Meta → WhatsApp → Números de teléfono → columna «ID de número de teléfono»" />
+            </Field>
+
+            <Field label="WABA ID (WhatsApp Business Account ID)" name="waba_id" required>
+              <IdInput
+                id="waba_id" name="waba_id"
+                placeholder="Ej. 987654321098765"
+                error={errs.waba_id}
+                onBlur={(v) => validateId('waba_id', v)}
+              />
+              <FieldError msg={errs.waba_id} />
+              <FieldHint text="Meta → Configuración del negocio → Cuentas de WhatsApp → ID de cuenta" />
+            </Field>
+
+            <Field label="Access Token permanente" name="access_token" required>
+              <div className="relative">
+                <input
+                  id="access_token" name="access_token"
+                  type={showToken ? 'text' : 'password'}
+                  required
+                  placeholder="Token generado desde tu usuario del sistema"
+                  onBlur={(e) => validateToken(e.target.value)}
+                  className={`${INPUT_BASE} pr-10 ${errs.access_token ? 'border-red-700' : 'border-gray-700'}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  aria-label={showToken ? 'Ocultar token' : 'Mostrar token'}
+                >
+                  <EyeIcon open={showToken} />
+                </button>
+              </div>
+              <FieldError msg={errs.access_token} />
+              <FieldHint text="Se almacena cifrado con AES-256. Nunca se muestra en texto plano." />
+            </Field>
+
+            <Field label="Nombre del número (opcional)" name="display_name">
+              <input
+                id="display_name" name="display_name" type="text"
+                placeholder="Ej. Clínica Lumina — Miraflores"
+                className={`${INPUT_BASE} border-gray-700`}
+              />
+            </Field>
+
+            {state?.error && (
+              <p className="text-sm text-red-400 bg-red-950 rounded-xl px-4 py-2.5 border border-red-900">
+                {state.error}
+              </p>
+            )}
+
+            <SubmitButton pending={connecting}>Conectar WhatsApp →</SubmitButton>
+          </form>
+        </div>
+      )}
+
+      {/* Skip option */}
+      <form action={skipAction}>
+        <button
+          type="submit"
+          disabled={skipping}
+          className="w-full text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors disabled:opacity-40"
+        >
+          {skipping ? 'Redirigiendo...' : 'Conectar después →'}
+        </button>
+      </form>
+    </div>
   )
 }
 

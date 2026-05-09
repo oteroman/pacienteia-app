@@ -5,6 +5,7 @@ import { revalidatePath }      from 'next/cache'
 import { createClient }        from '@/lib/supabase/server'
 import { createAdminClient }   from '@/lib/supabase/admin'
 import { setActiveContext }    from '@/lib/tenant/context'
+import { encryptToken }        from '@/lib/crypto/whatsapp-token'
 
 function slugify(name: string): string {
   return name
@@ -31,11 +32,24 @@ export async function createOrganization(prevState: { error?: string } | null, f
     return { error: 'Selecciona una especialidad válida' }
 
   const sb   = createAdminClient() as any
+
+  // Prevent duplicate orgs for the same owner
+  const { data: existingOrg } = await sb
+    .from('organizations')
+    .select('id, onboarding_status')
+    .eq('owner_user_id', user.id)
+    .is('deleted_at', null)
+    .single()
+
+  if (existingOrg) {
+    return { error: 'Ya tienes una organización creada. Continúa el proceso de configuración.' }
+  }
+
   const slug = slugify(name)
 
   // Ensure unique slug
-  const { data: existing } = await sb.from('organizations').select('id').eq('slug', slug).single()
-  const finalSlug = existing ? `${slug}-${Date.now().toString(36)}` : slug
+  const { data: existingSlug } = await sb.from('organizations').select('id').eq('slug', slug).single()
+  const finalSlug = existingSlug ? `${slug}-${Date.now().toString(36)}` : slug
 
   const { data: org, error } = await sb.from('organizations').insert({
     owner_user_id:      user.id,
@@ -55,6 +69,13 @@ export async function createOrganization(prevState: { error?: string } | null, f
     role:            'owner',
     status:          'active',
   })
+
+  // Close the conversion loop: mark this email as converted in landing_leads
+  await sb
+    .from('landing_leads')
+    .update({ status: 'converted', converted_at: new Date().toISOString() })
+    .eq('email', user.email ?? '')
+    .neq('status', 'converted')
 
   revalidatePath('/onboarding')
   redirect('/onboarding?step=2')
@@ -108,7 +129,87 @@ export async function createBranch(prevState: { error?: string } | null, formDat
   redirect('/onboarding?step=3')
 }
 
-// ── Step 3: Mark WhatsApp connected (manual for now) ──────────────────────
+// ── Step 3: Connect WhatsApp (real credentials) ───────────────────────────
+
+export async function connectWhatsApp(
+  _prevState: { error?: string } | null,
+  formData: FormData,
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado' }
+
+  const phoneNumberId = (formData.get('phone_number_id') as string)?.trim()
+  const wabaId        = (formData.get('waba_id')         as string)?.trim()
+  const accessToken   = (formData.get('access_token')    as string)?.trim()
+  const displayName   = (formData.get('display_name')    as string)?.trim() || null
+
+  if (!phoneNumberId) return { error: 'El Phone Number ID es requerido' }
+  if (!wabaId)        return { error: 'El WABA ID es requerido' }
+  if (!accessToken)   return { error: 'El Access Token es requerido' }
+
+  const sb = createAdminClient() as any
+
+  const { data: org } = await sb
+    .from('organizations')
+    .select('id')
+    .eq('owner_user_id', user.id)
+    .is('deleted_at', null)
+    .single()
+
+  if (!org) return { error: 'Organización no encontrada' }
+
+  const { data: branch } = await sb
+    .from('branches')
+    .select('id')
+    .eq('organization_id', org.id)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .single()
+
+  if (!branch) return { error: 'Sucursal no encontrada. Completa el paso 2 primero.' }
+
+  let accessTokenEnc: string
+  try {
+    accessTokenEnc = encryptToken(accessToken)
+  } catch {
+    return { error: 'Error de configuración del servidor. Contacta a soporte.' }
+  }
+
+  // Upsert: one phone_number_id per branch. If already exists, update.
+  const { error: dbError } = await sb
+    .from('branch_whatsapp_config')
+    .upsert(
+      {
+        branch_id:        branch.id,
+        organization_id:  org.id,
+        phone_number_id:  phoneNumberId,
+        waba_id:          wabaId,
+        access_token_enc: accessTokenEnc,
+        display_name:     displayName,
+        status:           'active',
+        connected_at:     new Date().toISOString(),
+      },
+      { onConflict: 'phone_number_id' },
+    )
+
+  if (dbError) {
+    if (dbError.code === '23505') {
+      return { error: 'Este Phone Number ID ya está registrado en otra sucursal.' }
+    }
+    return { error: dbError.message }
+  }
+
+  await sb.from('organizations')
+    .update({ onboarding_status: 'whatsapp_connected' })
+    .eq('id', org.id)
+
+  revalidatePath('/onboarding')
+  redirect('/onboarding?step=4')
+}
+
+// ── Step 3: Skip WhatsApp (connect later) ─────────────────────────────────
 
 export async function markWhatsAppConnected(_prevState: unknown, _formData: FormData) {
   const supabase = await createClient()
