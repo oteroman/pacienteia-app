@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
 import { AppointmentStatusBadge } from '@/components/appointment/appointment-status-badge'
 import { updateAppointmentStatus, cancelAppointment } from '@/app/actions/appointments'
+import AppointmentNotesEditor from './AppointmentNotesEditor'
 import type { AppointmentStatus } from '@/types/database'
 
 interface PageProps { params: Promise<{ id: string }> }
@@ -99,15 +100,10 @@ export default async function AppointmentDetailPage({ params }: PageProps) {
           )}
         </dl>
 
-        {/* Notes */}
-        {apt.notes && (
-          <div>
-            <p className="text-xs text-gray-400 mb-1.5">Notas</p>
-            <p className="text-sm text-gray-700 bg-gray-50 rounded-xl px-4 py-3 whitespace-pre-line leading-relaxed">
-              {apt.notes}
-            </p>
-          </div>
-        )}
+        {/* Notes — inline editor */}
+        <div className="pt-2 border-t border-gray-100">
+          <AppointmentNotesEditor appointmentId={apt.id} initialNotes={apt.notes} />
+        </div>
 
         {/* Status change actions */}
         {(canConfirm || canMarkDone || canCancel) && (

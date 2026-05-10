@@ -74,6 +74,26 @@ export async function updateAppointmentStatus(id: string, status: AppointmentSta
   revalidatePath('/dashboard')
 }
 
+export async function saveAppointmentNotes(
+  id: string,
+  _prev: { ok: boolean; error?: string } | null,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const { organizationId } = await getContext()
+  const notes = (formData.get('notes') as string | null)?.trim() || null
+  const supabase = await createClient()
+
+  const { error } = await mut(supabase)
+    .from('appointments')
+    .update({ notes })
+    .eq('id', id)
+    .eq('organization_id', organizationId)
+
+  if (error) return { ok: false, error: error.message }
+  revalidatePath(`/appointments/${id}`)
+  return { ok: true }
+}
+
 export async function cancelAppointment(id: string): Promise<void> {
   const { organizationId } = await getContext()
   const supabase = await createClient()
