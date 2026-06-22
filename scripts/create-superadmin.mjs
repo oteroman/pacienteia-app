@@ -4,11 +4,16 @@
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL     = 'https://hwuuuslpzxcgpfzdjrhz.supabase.co'
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3dXV1c2xwenhjZ3BmemRqcmh6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Nzk3OTIyMiwiZXhwIjoyMDkzNTU1MjIyfQ.xmJLfRQUGjZtH6Va6hHr9YCDR4Pd4QUTesTR8EL0D8o'
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-const ADMIN_EMAIL    = 'oteroman22@gmail.com'
-const ADMIN_PASSWORD = 'Admin2026!'
+const ADMIN_EMAIL    = process.env.ADMIN_EMAIL || 'oteroman22@gmail.com'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
 const ADMIN_NAME     = 'PacienteIA Admin'
+
+if (!SERVICE_ROLE_KEY || !ADMIN_PASSWORD) {
+  console.error('Falta SUPABASE_SERVICE_ROLE_KEY y/o ADMIN_PASSWORD en el entorno.')
+  process.exit(1)
+}
 
 const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }

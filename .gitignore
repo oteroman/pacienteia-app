@@ -11,6 +11,10 @@ out/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.pulled
+.env.vercel
+!.env.example
 
 # vercel
 .vercel
@@ -23,4 +27,11 @@ next-env.d.ts
 .DS_Store
 *.pem
 
+# secretos / referencia con tokens
+docs/PacienteIA_Variables_tokens.csv
+
+# archivos temporales de office
+~$*
+
 .vercel
+.env*.local
