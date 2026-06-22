@@ -1,6 +1,6 @@
 # PacienteIA — Solución Completa: Estado, Visión y Plan de Implementación
 
-> Documento maestro actualizado al 2026-05-19 (rev 7 — Sprint 6 completado: Expediente Operativo del Paciente + validación de horarios en citas + fixes críticos producción).
+> Documento maestro actualizado al 2026-06-12 (rev 8 — documentados módulos que vivían solo en el working tree: Rebooking, Concierge de Sala de Espera, Ops cross-sistema, Renewal Signals, Value/ROI, consolas de plataforma. Consolidación a git + saneamiento de secretos del fuente).
 > Consolida: Idea de Negocio, PacienteIA.txt, requerimientos.md, resumen_de_requerimientos.txt y el estado real del producto.
 
 ---
@@ -174,6 +174,20 @@ PacienteIA tiene lo que ninguno tiene: WhatsApp nativo en español peruano, Yape
 | **API Pública + API Keys** | Tabla `api_keys` (SHA-256, prefijo `paia_`). `lib/api/keys.ts`: `generateApiKey()` y `validateApiKey()`. `app/actions/api-keys.ts`: crear y revocar scoped a org. `/settings/api-keys` (gate `api_webhooks`, Premium): UI con creación, revocación y docs inline; raw key visible solo una vez via `?new_key=`. 3 endpoints: `GET /api/v1/patients` (`?q`, `?limit`), `GET /api/v1/appointments` (`?date`, `?status`, `?limit`), `POST /api/v1/leads` (source_channel: 'api', SLA 30min). Auth por header `X-API-Key`; `/api/v1/` excluido del middleware de sesión. |
 | **Onboarding diferenciado por rubro** | Rubro viaja como `?industry=` en cada redirect entre steps del wizard. Step 1 pre-selecciona el rubro. Steps 2-3 propagan el rubro con `<input type="hidden">`. Step 4 muestra features específicas según rubro: estética (ciclos retratamiento, reputación), dental (planes multi-sesión, tracking), psicología (mensajes neutros, privacidad), medicina (derivaciones, seguimiento). Landing modal "Prueba Gratis" incluye CTA secundario "Registrarme directamente →" que lleva a `https://app.pacienteia.com/signup?industry={rubro}`. |
 
+### Operación Avanzada y Consolas de Plataforma — Ya Implementado ✅ (documentado 2026-06-12)
+
+> Estos módulos existían en el código y en producción pero no estaban en la documentación. Se descubrieron al consolidar el working tree a git.
+
+| Feature | Detalle |
+|---------|---------|
+| **Rebooking** | `/rebooking` — tablero de recuperación de cancelaciones, no-shows y silencios. `lib/rebooking/index.ts` (`fetchRebookingDashboard`: cancelled, noResponse, slotsFreed, resolvedToday) + `app/actions/rebooking.ts`. Pill de pendientes en el header |
+| **Concierge de Sala de Espera** | `/waiting-room` — cola en vivo (tabla `waiting_queue`): posición, estados `waiting`/`called`, hora de ingreso y de llamada. `/settings/waiting-room` genera un **QR imprimible** para que el paciente se autoregistre. `app/actions/waiting-room.ts`. (Era la idea "Concierge de Sala de Espera" de Fase 7 — ya construida) |
+| **Ops (cross-sistema)** | `/ops` — vista unificada intake → inbox → copiloto → resolución: stats operativos, escalaciones, follow-ups pendientes, eventos recientes y performance comparada de clínicas |
+| **Renewal Signals** | `/renewal` (**solo platform admins**) — señales cross-org: `renewal_risk`, `expansion_ready`, `expansion_low_hanging`, `healthy_renewal`, `renewal_watch`, `inactive`. `fetchRenewalSignals` + `SIGNAL_META` en `lib/analytics/signals.ts` |
+| **Value / ROI** | `/value` y `/analytics/value` — valor generado y ROI estimado con metodología conservadora para el mercado de Lima. Refuerzan el "valor acumulado percibido" por el dueño |
+| **Customer Health / Playbook** | `/analytics/health` (Customer Health) y `/analytics/playbook` (guía de acciones recomendadas) |
+| **Consolas de plataforma** | `/platform/mrr` (Revenue & Growth: MRR, activación y oportunidades en tiempo real), `/platform/trials` (cuentas en prueba), `/platform/audit` (auditoría de acciones de admins), `/platform/crm` (CRM comercial: prospectos asignados y clientes captados), `/platform/admins` (equipo de plataforma superadmin/support/sales) |
+
 ---
 
 ## 4. Lo que falta por construir
@@ -214,7 +228,7 @@ PacienteIA tiene lo que ninguno tiene: WhatsApp nativo en español peruano, Yape
 | # | Feature | Por qué importa | Esfuerzo |
 |---|---------|----------------|---------|
 | P4.1 | **Voice-to-Clinical Record** | Doctor graba audio 30s → IA transcribe → formato SOAP → ficha del paciente. Cumplimiento legal sin tipear | Alto |
-| P4.2 | **Concierge de Sala de Espera** | QR en recepción → WhatsApp con posición en cola + contenido educativo del tratamiento | Medio |
+| ~~P4.2~~ | ~~**Concierge de Sala de Espera**~~ | ✅ Implementado — `/waiting-room` (cola en vivo `waiting_queue`) + `/settings/waiting-room` (QR de autoregistro). Falta solo contenido educativo del tratamiento | — |
 | P4.3 | **Auditor de Insumos por Foto** | Foto del vial vacío → IA reconoce producto → descuenta stock → alerta si nivel crítico. Anti-robo | Alto |
 | P4.4 | **Voice AI Receptionist 24/7** | Llamada automática a hot leads que no responden WhatsApp en 15 min. Convierte llamadas perdidas | Muy alto |
 | P4.5 | **Multi-especialidad con Derivación** | Paciente consulta por piel y nutrición → IA propone paquete multi-especialista → aumenta LTV | Alto |
@@ -518,7 +532,7 @@ El staff graba una nota de voz en WhatsApp desde su número registrado y el sist
 | # | Feature | Mes estimado |
 |---|---------|-------------|
 | Voice-to-Clinical Record | Doctor graba audio → SOAP → ficha del paciente | Mes 6-7 |
-| Concierge de Sala de Espera | QR en recepción → WhatsApp con posición en cola | Mes 7 |
+| ~~Concierge de Sala de Espera~~ | ✅ `/waiting-room` + QR de autoregistro (`waiting_queue`) | Hecho |
 | Auditor de Insumos por Foto | Foto vial vacío → stock automático → alerta proveedor | Mes 8-9 |
 | Google Business API completa | Reseñas nuevas → sugerencia de respuesta IA — infra lista, solo config env | Mes 6 |
 | Multi-especialidad con Derivación | Cross-selling clínico con plan integral | Mes 9-10 |
@@ -632,4 +646,4 @@ El staff graba una nota de voz en WhatsApp desde su número registrado y el sist
 
 ---
 
-*Documento actualizado al 2026-05-19 (rev 7). Actualizar en cada sesión de desarrollo junto con CLAUDE.md.*
+*Documento actualizado al 2026-06-12 (rev 8). Actualizar en cada sesión de desarrollo junto con CLAUDE.md.*

@@ -250,7 +250,29 @@ npx vercel --prod
 | Archivo | Propósito |
 |---------|-----------|
 | `lib/platform/tenants.ts` | Gestión de organizaciones desde superadmin |
-| `app/(dashboard)/platform/` | Panel de superadmin |
+| `app/platform/page.tsx` | Panel de superadmin (home) |
+| `app/platform/mrr/page.tsx` | Revenue & Growth — MRR, activación y oportunidades en tiempo real |
+| `app/platform/trials/page.tsx` | Trials — seguimiento de cuentas en período de prueba |
+| `app/platform/audit/page.tsx` | Auditoría — todas las acciones de admins de plataforma |
+| `app/platform/crm/page.tsx` | CRM comercial — prospectos asignados y clientes captados |
+| `app/platform/admins/page.tsx` | Equipo de Plataforma — miembros con rol superadmin/support/sales |
+| `app/platform/health/page.tsx` | Health check de la plataforma |
+| `app/actions/platform-admins.ts` | Gestión de miembros del equipo de plataforma |
+
+### Operación Avanzada (Rebooking / Sala de Espera / Ops / Renewal / Value)
+| Archivo | Propósito |
+|---------|-----------|
+| `app/(dashboard)/rebooking/page.tsx` | Recuperación de cancelaciones, no-shows y silencios. `fetchRebookingDashboard` (cancelled, noResponse, slotsFreed, resolvedToday) |
+| `lib/rebooking/index.ts` | Lógica del dashboard de rebooking |
+| `app/actions/rebooking.ts` | Acciones de recuperación (contactar, marcar resuelto) |
+| `app/(dashboard)/waiting-room/page.tsx` | Concierge de Sala de Espera — cola en vivo (`waiting_queue`), posición, estados waiting/called |
+| `app/(dashboard)/settings/waiting-room/page.tsx` | Config: QR imprimible para que el paciente se una a la cola |
+| `app/actions/waiting-room.ts` | Acciones de la cola (llamar paciente, marcar atendido) |
+| `app/(dashboard)/ops/page.tsx` | Operaciones — vista cross-sistema intake → inbox → copiloto → resolución (escalaciones, follow-ups, eventos) |
+| `app/(dashboard)/renewal/page.tsx` | Señales de renovación/expansión cross-org (**solo platform admins**). `fetchRenewalSignals` en `lib/analytics/signals.ts` |
+| `app/(dashboard)/value/page.tsx` + `app/(dashboard)/analytics/value/page.tsx` | Valor generado / ROI estimado con metodología conservadora (mercado Lima) |
+| `app/(dashboard)/analytics/health/page.tsx` | Customer Health |
+| `app/(dashboard)/analytics/playbook/page.tsx` | Playbook operativo — guía de acciones recomendadas |
 
 ---
 
@@ -292,10 +314,11 @@ npx vercel --prod
 | `ad_spend` | Inversión publicitaria por org/branch/día (Facebook, Instagram, Google, TikTok) |
 | `marketing_alerts` | Alertas CPL/conversión generadas por el CRON de fugas de marketing |
 | `patient_photos` | Fotos antes/después por paciente — `type` (before/after/general), `appointment_id` opcional |
+| `waiting_queue` | Cola de la sala de espera por branch — `position`, `status` (waiting/called), `entered_at`, `called_at` |
 
 ---
 
-## Estado del Proyecto (2026-05-19)
+## Estado del Proyecto (2026-06-12)
 
 ### COMPLETADO ✅
 
@@ -352,6 +375,13 @@ npx vercel --prod
 | **Fixes sesión 2026-05-18** | Login page `force-dynamic` + skeleton (Cloudflare Bot Fight Mode fix). Middleware redirige `/` → `/login`. Staff page null-safe. Nav Staff movido a posición 2. copilot_tasks: `interaction_id` nullable + columna `source`. Tareas copilot newest-first. Fallback audio Meta test number. Staff text → copilot_task con link pre-llenado de cita (`lib/voice/parse-staff-text.ts`). Fecha+hora en form de citas. Teléfono solo numérico. |
 | **Horarios y bloqueos** | Vista semanal siempre visible (estado vacío si no hay datos). Bloqueos de fecha y horarios regulares se respetan al crear/editar citas (`checkScheduleBlock` en `app/actions/appointments.ts`). Bug fix `is_active` y `doctor_name NOT NULL` en `addDoctorSchedule`. |
 | **Expediente Operativo** | Tabla `patients.contraindications` (campo dedicado, se muestra en ⚠ rojo). Tabla `patient_photos` (fotos antes/después, galería con lightbox). Timeline de citas muestra profesional con color dot. Documento de consentimiento informado imprimible `/patients/[id]/consent`. |
+| **Rebooking** | `/rebooking` — recuperación de cancelaciones, no-shows y silencios. `lib/rebooking/index.ts` + `app/actions/rebooking.ts`. Pill de pendientes en header. |
+| **Concierge Sala de Espera** | `/waiting-room` cola en vivo (`waiting_queue`) con posición y estados waiting/called; `/settings/waiting-room` genera QR imprimible para autoregistro del paciente. `app/actions/waiting-room.ts`. |
+| **Ops (cross-sistema)** | `/ops` — vista intake → inbox → copiloto → resolución: escalaciones, follow-ups pendientes, eventos recientes, performance de clínicas. |
+| **Renewal Signals** | `/renewal` (**solo platform admins**) — señales cross-org de renovación/expansión/riesgo. `fetchRenewalSignals` en `lib/analytics/signals.ts`. |
+| **Value / ROI** | `/value` y `/analytics/value` — valor generado y ROI estimado con metodología conservadora (Lima). `/analytics/health` (Customer Health) y `/analytics/playbook` (Playbook operativo). |
+| **Platform consolas** | `/platform/mrr` (MRR & Growth tiempo real), `/platform/trials`, `/platform/audit` (auditoría de admins), `/platform/crm` (CRM comercial), `/platform/admins` (equipo de plataforma). |
+| **Consolidación a git (2026-06-12)** | Casi todo el código vivía solo en el working tree y se desplegaba con `npx vercel --prod` directo desde local. Se versionó todo + se sacaron secretos hardcodeados del fuente (ver `memory/pending-credential-rotation.md`). |
 
 ### n8n WORKFLOWS (todos activos ✅)
 
