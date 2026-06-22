@@ -3,8 +3,7 @@
 // Saves to patient_feedback and flags alert if score <= 3.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import type { TablesInsert } from '@/types/database'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 function authorized(req: NextRequest): boolean {
   const secret = req.headers.get('x-webhook-secret')
@@ -12,7 +11,7 @@ function authorized(req: NextRequest): boolean {
 }
 
 type FeedbackBody = {
-  clinic_id: string
+  organization_id: string
   patient_id?: string
   appointment_id?: string
   score: number              // 1-5
@@ -32,10 +31,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { clinic_id, patient_id, appointment_id, score, channel, google_review_sent } = body
+  // Accept both org_id (new) and clinic_id (legacy n8n compatibility)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawBody = body as any
+  const organization_id = body.organization_id ?? rawBody.clinic_id
+  const { patient_id, appointment_id, score, channel, google_review_sent } = body
 
-  if (!clinic_id || score == null) {
-    return NextResponse.json({ error: 'clinic_id and score are required' }, { status: 400 })
+  if (!organization_id || score == null) {
+    return NextResponse.json({ error: 'organization_id and score are required' }, { status: 400 })
   }
   if (score < 1 || score > 5) {
     return NextResponse.json({ error: 'score must be between 1 and 5' }, { status: 400 })
@@ -44,19 +47,17 @@ export async function POST(req: NextRequest) {
   const isNegative = score <= 3
   const googleSent = !isNegative && (google_review_sent ?? false)
 
-  const insertData: TablesInsert<'patient_feedback'> = {
-    clinic_id,
-    patient_id: patient_id ?? null,
-    appointment_id: appointment_id ?? null,
-    score,
-    channel: channel ?? 'whatsapp',
-    google_review_sent: googleSent,
-    alert_sent: isNegative,
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = (await createClient()) as any
-  const { data, error } = await supabase.from('patient_feedback').insert(insertData).select().single()
+  const supabase = createAdminClient() as any
+  const { data, error } = await supabase.from('patient_feedback').insert({
+    organization_id,
+    patient_id:         patient_id ?? null,
+    appointment_id:     appointment_id ?? null,
+    score,
+    channel:            channel ?? 'whatsapp',
+    google_review_sent: googleSent,
+    alert_sent:         isNegative,
+  }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

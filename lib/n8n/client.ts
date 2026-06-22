@@ -10,7 +10,7 @@ export type WebhookEvent =
   | 'post_treatment.followup'
 
 export interface WebhookPayload {
-  clinic_id: string
+  organization_id: string
   event_type: WebhookEvent
   entity_type?: string
   entity_id?: string

@@ -19,7 +19,7 @@ interface AppointmentCalendarProps {
 
 const DOT_COLORS: Record<AppointmentStatus, string> = {
   scheduled: 'bg-gray-400',
-  confirmed: 'bg-green-500',
+  confirmed: 'bg-lima-500',
   completed: 'bg-brand-500',
   cancelled: 'bg-red-400',
   no_show:   'bg-yellow-500',
@@ -67,16 +67,16 @@ export function AppointmentCalendar({ appointments, year, month }: AppointmentCa
     <div className="space-y-6">
       {/* Month navigation */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">←</button>
-        <h2 className="text-base font-semibold text-gray-900 capitalize">{current.format('MMMM YYYY')}</h2>
-        <button onClick={() => navigate(1)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">→</button>
+        <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-mist text-slate">←</button>
+        <h2 className="text-base font-semibold text-ink capitalize">{current.format('MMMM YYYY')}</h2>
+        <button onClick={() => navigate(1)} className="p-2 rounded-lg hover:bg-mist text-slate">→</button>
       </div>
 
       {/* Day headers */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="bg-white rounded-2xl border border-fog shadow-xs overflow-hidden">
+        <div className="grid grid-cols-7 border-b border-fog">
           {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-gray-400">{d}</div>
+            <div key={d} className="py-2 text-center text-xs font-medium text-slate">{d}</div>
           ))}
         </div>
 
@@ -95,14 +95,14 @@ export function AppointmentCalendar({ appointments, year, month }: AppointmentCa
                   if (!dateStr) return
                   setSelectedDate(isSelected ? null : dateStr)
                 }}
-                className={`min-h-[64px] p-1.5 border-b border-r border-gray-50 transition-colors
+                className={`min-h-[64px] p-1.5 border-b border-r border-fog transition-colors
                   ${day ? 'cursor-pointer hover:bg-brand-50' : ''}
                   ${isSelected ? 'bg-brand-50' : ''}`}
               >
                 {day && (
                   <>
                     <span className={`text-xs font-medium flex w-6 h-6 items-center justify-center rounded-full
-                      ${isToday ? 'bg-brand-600 text-white' : 'text-gray-700'}`}>
+                      ${isToday ? 'bg-brand-600 text-white' : 'text-slate'}`}>
                       {day}
                     </span>
                     <div className="mt-1 flex flex-wrap gap-0.5">
@@ -114,7 +114,7 @@ export function AppointmentCalendar({ appointments, year, month }: AppointmentCa
                         />
                       ))}
                       {apts.length > 3 && (
-                        <span className="text-[9px] text-gray-400">+{apts.length - 3}</span>
+                        <span className="text-[9px] text-slate">+{apts.length - 3}</span>
                       )}
                     </div>
                   </>
@@ -126,25 +126,25 @@ export function AppointmentCalendar({ appointments, year, month }: AppointmentCa
       </div>
 
       {/* Appointment list for selected day */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
-        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 capitalize">{displayTitle}</h3>
-          <span className="text-xs text-gray-400">{selectedApts.length} cita{selectedApts.length !== 1 ? 's' : ''}</span>
+      <div className="bg-white rounded-2xl border border-fog shadow-xs">
+        <div className="px-5 py-3 border-b border-fog flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink capitalize">{displayTitle}</h3>
+          <span className="text-xs text-slate">{selectedApts.length} cita{selectedApts.length !== 1 ? 's' : ''}</span>
         </div>
         {selectedApts.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-gray-400 text-center">Sin citas</p>
+          <p className="px-5 py-6 text-sm text-slate text-center">Sin citas</p>
         ) : (
-          <ul className="divide-y divide-gray-50">
+          <ul className="divide-y divide-fog">
             {selectedApts
               .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
               .map((apt) => (
                 <li key={apt.id} className="px-5 py-3 flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{apt.patients?.full_name ?? '—'}</p>
-                    <p className="text-xs text-gray-400">{apt.treatment_type}</p>
+                    <p className="text-sm font-medium text-ink">{apt.patients?.full_name ?? '—'}</p>
+                    <p className="text-xs text-slate">{apt.treatment_type}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-slate">
                       {dayjs(apt.scheduled_at).format('HH:mm')}
                     </span>
                     <AppointmentStatusBadge status={apt.status as AppointmentStatus} />

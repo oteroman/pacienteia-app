@@ -15,8 +15,8 @@ const ROLE_LABEL: Record<string, string> = {
 const ROLE_COLOR: Record<string, string> = {
   owner:  'text-violet-600 bg-violet-50',
   admin:  'text-blue-600 bg-blue-50',
-  staff:  'text-gray-500 bg-gray-100',
-  viewer: 'text-gray-400 bg-gray-50',
+  staff:  'text-slate bg-[#F3F6F9]',
+  viewer: 'text-slate bg-mist',
 }
 
 export function ClinicSelector() {
@@ -39,7 +39,7 @@ export function ClinicSelector() {
     return (
       <div className="hidden sm:flex items-center gap-2">
         <BuildingIcon />
-        <span className="text-sm font-medium text-gray-800">{clinic.name}</span>
+        <span className="text-sm font-medium text-ink">{clinic.name}</span>
         {clinic.role && (
           <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${ROLE_COLOR[clinic.role] ?? ROLE_COLOR.staff}`}>
             {ROLE_LABEL[clinic.role] ?? clinic.role}
@@ -61,8 +61,8 @@ export function ClinicSelector() {
         onClick={() => setOpen((v) => !v)}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
           open
-            ? 'bg-gray-100 border-gray-200 text-gray-900'
-            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+            ? 'bg-[#F3F6F9] border-fog text-ink'
+            : 'bg-white border-fog text-slate hover:bg-mist hover:text-ink'
         }`}
       >
         <BuildingIcon />
@@ -71,8 +71,8 @@ export function ClinicSelector() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 w-72 bg-white border border-gray-100 rounded-xl shadow-lg ring-1 ring-black/5 z-50 overflow-hidden">
-          <p className="px-3 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+        <div className="absolute left-0 top-full mt-1.5 w-72 bg-white border border-fog rounded-xl shadow-lg ring-1 ring-black/5 z-50 overflow-hidden">
+          <p className="px-3 py-2 text-[10px] font-semibold text-slate uppercase tracking-wider border-b border-fog">
             Mis clínicas
           </p>
           <div className="py-1">
@@ -83,20 +83,20 @@ export function ClinicSelector() {
                   key={c.id}
                   onClick={() => handleSelect(c.id)}
                   className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors group ${
-                    isActive ? 'bg-violet-50' : 'hover:bg-gray-50'
+                    isActive ? 'bg-violet-50' : 'hover:bg-mist'
                   }`}
                 >
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
-                    isActive ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
+                    isActive ? 'bg-violet-600 text-white' : 'bg-[#F3F6F9] text-slate group-hover:bg-fog'
                   }`}>
                     {c.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-medium truncate ${isActive ? 'text-violet-700' : 'text-gray-800'}`}>
+                    <p className={`text-sm font-medium truncate ${isActive ? 'text-violet-700' : 'text-ink'}`}>
                       {c.name}
                     </p>
                     {c.role && (
-                      <p className={`text-[10px] font-semibold ${isActive ? 'text-violet-500' : 'text-gray-400'}`}>
+                      <p className={`text-[10px] font-semibold ${isActive ? 'text-violet-500' : 'text-slate'}`}>
                         {ROLE_LABEL[c.role] ?? c.role}
                       </p>
                     )}
@@ -116,7 +116,7 @@ export function ClinicSelector() {
 
 function BuildingIcon() {
   return (
-    <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <svg className="w-4 h-4 text-slate shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
     </svg>
   )
@@ -125,7 +125,7 @@ function BuildingIcon() {
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className={`w-3.5 h-3.5 text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
+      className={`w-3.5 h-3.5 text-slate transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
       viewBox="0 0 20 20"
       fill="currentColor"
     >

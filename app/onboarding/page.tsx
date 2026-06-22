@@ -30,11 +30,11 @@ function StepBar({ current }: { current: number }) {
               ? 'bg-brand-600 border-brand-500 text-white'
               : current > s.n
                 ? 'bg-green-600 border-green-500 text-white'
-                : 'bg-gray-800 border-gray-700 text-gray-500'}`}>
+                : 'bg-gray-800 border-gray-700 text-slate'}`}>
             {current > s.n ? '✓' : s.n}
           </div>
           <span className={`text-xs font-medium hidden sm:block
-            ${current === s.n ? 'text-white' : current > s.n ? 'text-green-400' : 'text-gray-600'}`}>
+            ${current === s.n ? 'text-white' : current > s.n ? 'text-green-400' : 'text-slate'}`}>
             {s.label}
           </span>
           {i < STEPS.length - 1 && (
@@ -54,7 +54,7 @@ function Field({ label, name, type = 'text', placeholder, required, children }: 
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={name} className="block text-sm font-medium text-gray-300">
+      <label htmlFor={name} className="block text-sm font-medium text-fog">
         {label}{required && <span className="text-brand-400 ml-0.5">*</span>}
       </label>
       {children ?? (
@@ -84,13 +84,13 @@ function SubmitButton({ children, pending }: { children: React.ReactNode; pendin
 
 // ── Step 1: Create organization ─────────────────────────────────────────────
 
-function Step1() {
+function Step1({ industry }: { industry: string }) {
   const [state, action, pending] = useActionState(createOrganization, null)
   return (
     <form action={action} className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-white">Cuéntanos sobre tu clínica</h1>
-        <p className="text-sm text-gray-400 mt-1">Esta información configura tu cuenta en PacienteIA.</p>
+        <p className="text-sm text-slate mt-1">Esta información configura tu cuenta en PacienteIA.</p>
       </div>
 
       <Field label="Nombre de la clínica" name="name" placeholder="Ej. Clínica Estética Lumina" required />
@@ -99,7 +99,7 @@ function Step1() {
         <select
           name="industry"
           required
-          defaultValue="estetica"
+          defaultValue={industry || 'estetica'}
           className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white
                      focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
@@ -125,13 +125,14 @@ function Step1() {
 
 // ── Step 2: Create branch ───────────────────────────────────────────────────
 
-function Step2() {
+function Step2({ industry }: { industry: string }) {
   const [state, action, pending] = useActionState(createBranch, null)
   return (
     <form action={action} className="space-y-5">
+      <input type="hidden" name="industry" value={industry} />
       <div>
         <h1 className="text-2xl font-bold text-white">Tu primera sucursal</h1>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-slate mt-1">
           Una sucursal = una ubicación física + un número de WhatsApp.
           Puedes agregar más después.
         </p>
@@ -208,7 +209,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 function FieldHint({ text }: { text: string }) {
-  return <p className="text-[11px] text-gray-600">{text}</p>
+  return <p className="text-[11px] text-slate">{text}</p>
 }
 
 function FieldError({ msg }: { msg?: string }) {
@@ -216,11 +217,9 @@ function FieldError({ msg }: { msg?: string }) {
   return <p className="text-[11px] text-red-400">{msg}</p>
 }
 
-const SUPPORT_WA = 'https://wa.me/51990180506?text=Hola%2C+necesito+ayuda+para+conectar+mi+WhatsApp+Business+a+PacienteIA'
-// Reemplaza este link cuando tengas el video tutorial grabado:
-const TUTORIAL_YT = 'https://www.youtube.com/results?search_query=conectar+whatsapp+business+api+meta+credenciales'
+const SUPPORT_WA = 'https://wa.me/51934123012?text=Hola%2C+necesito+ayuda+para+conectar+mi+WhatsApp+Business+a+PacienteIA'
 
-function Step3() {
+function Step3({ industry }: { industry: string }) {
   const [state,    connectAction, connecting] = useActionState(connectWhatsApp,      null)
   const [,         skipAction,    skipping  ] = useActionState(markWhatsAppConnected, null)
   const [showForm,  setShowForm]  = useState(false)
@@ -245,82 +244,56 @@ function Step3() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-white">Conecta WhatsApp Business</h1>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-slate mt-1">
           Vincula tu número de WhatsApp Business para que PacienteIA atienda
           automáticamente consultas, confirme citas y haga seguimiento.
         </p>
       </div>
 
-      {/* ── Opciones de ayuda ───────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
-
-        {/* Opción 1: Tutorial YouTube */}
-        <a
-          href={TUTORIAL_YT}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col gap-1.5 bg-gray-900 border border-gray-700 hover:border-gray-500
-                     rounded-xl p-4 transition-colors group"
-        >
-          <span className="text-xl">▶️</span>
-          <span className="text-sm font-semibold text-white group-hover:text-brand-300 transition-colors">
-            Ver tutorial
-          </span>
-          <span className="text-[11px] text-gray-500 leading-snug">
-            Cómo obtener credenciales de Meta en 10 minutos
-          </span>
-        </a>
-
-        {/* Opción 2: Contactar soporte */}
-        <a
-          href={SUPPORT_WA}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex flex-col gap-1.5 bg-gray-900 border border-gray-700 hover:border-green-700
-                     rounded-xl p-4 transition-colors group"
-        >
-          <span className="text-xl">💬</span>
-          <span className="text-sm font-semibold text-white group-hover:text-green-400 transition-colors">
-            Hablar con soporte
-          </span>
-          <span className="text-[11px] text-gray-500 leading-snug">
-            Te ayudamos a configurarlo paso a paso vía WhatsApp
-          </span>
-        </a>
-      </div>
-
-      {/* ── Separador ───────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-gray-800" />
-        <span className="text-xs text-gray-600">o si ya tienes las credenciales</span>
-        <div className="flex-1 h-px bg-gray-800" />
-      </div>
-
       {/* ── Toggle formulario ───────────────────────────── */}
       {!showForm ? (
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold
-                     text-sm px-5 py-3 rounded-xl transition-colors"
-        >
-          Ingresar credenciales →
-        </button>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold
+                       text-sm px-5 py-3 rounded-xl transition-colors"
+          >
+            Ingresar credenciales de Meta →
+          </button>
+
+          {/* Soporte discreto */}
+          <a
+            href={SUPPORT_WA}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full border border-gray-700
+                       hover:border-green-700 text-slate hover:text-green-400 text-sm
+                       font-medium px-5 py-2.5 rounded-xl transition-colors"
+          >
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.12.554 4.107 1.523 5.828L0 24l6.332-1.51A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.37l-.36-.214-3.724.888.913-3.638-.235-.374A9.797 9.797 0 0 1 2.182 12C2.182 6.575 6.575 2.182 12 2.182S21.818 6.575 21.818 12 17.425 21.818 12 21.818z"/>
+            </svg>
+            ¿Necesitas ayuda? Escríbenos por WhatsApp
+          </a>
+        </div>
       ) : (
         <div className="space-y-4">
           {/* Webhook URL */}
           <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-1.5">
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+            <p className="text-[10px] font-semibold text-slate uppercase tracking-wide">
               URL de webhook — pégala en Meta Business Suite
             </p>
             <p className="text-sm font-mono text-brand-400 break-all select-all">{WEBHOOK_URL}</p>
-            <p className="text-[11px] text-gray-600">
+            <p className="text-[11px] text-slate">
               Meta → WhatsApp → Configuración → Webhooks → URL de devolución de llamada
             </p>
           </div>
 
           {/* Credentials form */}
           <form action={connectAction} className="space-y-4">
+            <input type="hidden" name="industry" value={industry} />
 
             <Field label="Phone Number ID" name="phone_number_id" required>
               <IdInput
@@ -357,7 +330,7 @@ function Step3() {
                 <button
                   type="button"
                   onClick={() => setShowToken((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate hover:text-fog transition-colors"
                   aria-label={showToken ? 'Ocultar token' : 'Mostrar token'}
                 >
                   <EyeIcon open={showToken} />
@@ -388,10 +361,11 @@ function Step3() {
 
       {/* Skip option */}
       <form action={skipAction}>
+        <input type="hidden" name="industry" value={industry} />
         <button
           type="submit"
           disabled={skipping}
-          className="w-full text-sm text-gray-500 hover:text-gray-300 py-2 transition-colors disabled:opacity-40"
+          className="w-full text-sm text-slate hover:text-fog py-2 transition-colors disabled:opacity-40"
         >
           {skipping ? 'Redirigiendo...' : 'Conectar después →'}
         </button>
@@ -400,30 +374,62 @@ function Step3() {
   )
 }
 
-// ── Step 4: All done ────────────────────────────────────────────────────────
+// ── Step 4: All done — rubro-specific ──────────────────────────────────────
 
-function Step4() {
+const RUBRO_FEATURES: Record<string, { title: string; features: { icon: string; label: string }[] }> = {
+  estetica: {
+    title: 'Lista para tu clínica estética',
+    features: [
+      { icon: '💉', label: 'Ciclos de retratamiento por servicio (botox, rellenos)' },
+      { icon: '📅', label: 'Recordatorios automáticos 24h y 2h antes' },
+      { icon: '⭐', label: 'Encuesta post-cita y escudo de reputación Google' },
+    ],
+  },
+  dental: {
+    title: 'Lista para tu clínica dental',
+    features: [
+      { icon: '🦷', label: 'Seguimiento de controles y limpiezas semestrales' },
+      { icon: '📅', label: 'Recordatorios de citas por WhatsApp' },
+      { icon: '📋', label: 'Gestión de planes de tratamiento multi-sesión' },
+    ],
+  },
+  psicologia: {
+    title: 'Lista para tu consultorio',
+    features: [
+      { icon: '🧠', label: 'Adherencia al tratamiento: recordatorios sin revelar motivo' },
+      { icon: '🔒', label: 'Máxima privacidad: la IA nunca menciona diagnósticos' },
+      { icon: '📅', label: 'Sesiones semanales automatizadas' },
+    ],
+  },
+  medicina: {
+    title: 'Lista para tu consultorio médico',
+    features: [
+      { icon: '🩺', label: 'Seguimiento de pacientes crónicos' },
+      { icon: '📅', label: 'Recordatorios de controles preventivos' },
+      { icon: '💬', label: 'Confirmación automática de citas por WhatsApp' },
+    ],
+  },
+}
+
+function Step4({ industry }: { industry: string }) {
   const [, action, pending] = useActionState(markFirstFlowActive, null)
+  const info = RUBRO_FEATURES[industry] ?? RUBRO_FEATURES.estetica
   return (
     <form action={action} className="space-y-5 text-center">
       <div className="text-6xl">🎉</div>
       <div>
         <h1 className="text-2xl font-bold text-white">¡Todo listo!</h1>
-        <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
-          Tu clínica está configurada. Entra al dashboard para comenzar a gestionar
-          pacientes, citas y leads desde un solo lugar.
+        <p className="text-sm text-slate mt-2 max-w-sm mx-auto">
+          {info.title}. Tu dashboard está configurado con los flujos automáticos
+          para tu especialidad.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 text-center text-sm">
-        {[
-          { icon: '📋', label: 'Gestiona leads y citas' },
-          { icon: '💬', label: 'WhatsApp automatizado' },
-          { icon: '📊', label: 'Dashboard de resultados' },
-        ].map((f) => (
-          <div key={f.label} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
-            <p className="text-2xl mb-2">{f.icon}</p>
-            <p className="text-xs text-gray-400 leading-tight">{f.label}</p>
+      <div className="space-y-2 text-left">
+        {info.features.map((f) => (
+          <div key={f.label} className="flex items-start gap-3 bg-gray-900 rounded-xl p-3.5 border border-gray-800">
+            <span className="text-xl shrink-0">{f.icon}</span>
+            <p className="text-xs text-fog leading-snug">{f.label}</p>
           </div>
         ))}
       </div>
@@ -435,17 +441,22 @@ function Step4() {
 
 // ── Page controller (reads ?step from URL) ─────────────────────────────────
 
+const VALID_INDUSTRIES = ['estetica', 'dental', 'psicologia', 'medicina']
+
 function OnboardingContent() {
-  const params = useSearchParams()
-  const step   = Number(params.get('step') ?? '1')
+  const params    = useSearchParams()
+  const step      = Number(params.get('step') ?? '1')
+  const industry  = VALID_INDUSTRIES.includes(params.get('industry') ?? '')
+    ? (params.get('industry') as string)
+    : 'estetica'
 
   return (
     <div className="w-full max-w-md space-y-6">
       <StepBar current={step} />
-      {step === 1 && <Step1 />}
-      {step === 2 && <Step2 />}
-      {step === 3 && <Step3 />}
-      {step === 4 && <Step4 />}
+      {step === 1 && <Step1 industry={industry} />}
+      {step === 2 && <Step2 industry={industry} />}
+      {step === 3 && <Step3 industry={industry} />}
+      {step === 4 && <Step4 industry={industry} />}
     </div>
   )
 }

@@ -1,0 +1,503 @@
+{
+  "name": "PacienteIA — Landing Leads Nurture",
+  "nodes": [
+    {
+      "id": "node-01-webhook",
+      "name": "Webhook Landing",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [80, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "landing-leads",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-02-code-enrich",
+      "name": "Code Enrich",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 300],
+      "parameters": {
+        "jsCode": "const sectorData = {\n  estetica: {\n    label: 'Centro de Estética',\n    metric: 'Las clínicas estéticas reducen 40% los no-shows con recordatorios automáticos.',\n    pain: 'cada turno perdido es una cabina vacía que no genera ingresos',\n    demoHook: 'Te mostramos cómo una clínica estética en Lima redujo sus cancelaciones a la mitad en 30 días.',\n    ctaLabel: 'Activar recordatorios automáticos',\n    emoji: '✨'\n  },\n  odontologia: {\n    label: 'Consultorio Dental',\n    metric: 'Los consultorios dentales recuperan hasta S/3,000 al mes en citas que habrían quedado vacías.',\n    pain: 'cada silla vacía son ingresos que no vuelven',\n    demoHook: 'Te mostramos cómo un dentista en Miraflores llenó su agenda en 2 semanas.',\n    ctaLabel: 'Llenar mi agenda hoy',\n    emoji: '🦷'\n  },\n  psicologia: {\n    label: 'Consultorio de Psicología',\n    metric: 'Los psicólogos con recordatorios automáticos tienen 35% menos cancelaciones de último minuto.',\n    pain: 'las cancelaciones de última hora interrumpen el vínculo terapéutico',\n    demoHook: 'Te mostramos cómo un psicólogo en San Isidro recuperó 6 sesiones al mes.',\n    ctaLabel: 'Reducir mis cancelaciones',\n    emoji: '🧠'\n  },\n  medicos: {\n    label: 'Consultorio Médico',\n    metric: 'Las clínicas médicas con IA reducen 45% los no-shows y mejoran la satisfacción del paciente.',\n    pain: 'los pacientes que no asisten generan costos operativos que se acumulan silenciosamente',\n    demoHook: 'Te mostramos cómo un médico en Lima Norte optimizó su agenda en una semana.',\n    ctaLabel: 'Optimizar mi agenda',\n    emoji: '🩺'\n  }\n};\n\nconst rubro = ($input.item.json.rubro || 'medicos').toLowerCase();\nconst email = ($input.item.json.email || '').toLowerCase().trim();\nconst sector = sectorData[rubro] || sectorData['medicos'];\n\nif (!email || !email.includes('@')) {\n  throw new Error('Email inválido: ' + email);\n}\n\nreturn [{\n  json: {\n    email,\n    rubro,\n    sector,\n    timestamp: new Date().toISOString(),\n    signupUrl: 'https://app.pacienteia.com/signup',\n    fromName: 'Paciente IA',\n    fromEmail: 'hola@pacienteia.com'\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-03-supabase-upsert",
+      "name": "Supabase UPSERT Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [560, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/landing_leads",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={{ JSON.stringify({ email: $json.email, rubro: $json.rubro, source: 'landing_footer' }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-04-telegram",
+      "name": "Telegram Notificar Equipo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $env.TELEGRAM_BOT_TOKEN }}/sendMessage",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, text: '🎯 Nuevo lead landing\\n\\n📧 ' + $('Code Enrich').item.json.email + '\\n🏥 ' + $('Code Enrich').item.json.sector.label + '\\n⏰ ' + new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' }), parse_mode: 'HTML' }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-05-email-welcome",
+      "name": "Email 1 — Bienvenida",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1040, 300],
+      "parameters": {
+        "fromEmail": "={{ $('Code Enrich').item.json.fromEmail }}",
+        "fromName": "={{ $('Code Enrich').item.json.fromName }}",
+        "toEmail": "={{ $('Code Enrich').item.json.email }}",
+        "subject": "=Tu prueba gratis de Paciente IA está lista {{ $('Code Enrich').item.json.sector.emoji }}",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;padding:0;background:#F4F4F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding:32px 16px\">\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;max-width:600px\">\n  <tr><td style=\"background:linear-gradient(135deg,#7C3AED,#EC4899);padding:32px;text-align:center\">\n    <h1 style=\"margin:0;color:#fff;font-size:24px;font-weight:700\">Paciente IA</h1>\n    <p style=\"margin:8px 0 0;color:rgba(255,255,255,.8);font-size:14px\">Automatización inteligente para clínicas</p>\n  </td></tr>\n  <tr><td style=\"padding:40px 40px 32px\">\n    <p style=\"margin:0 0 16px;font-size:16px;color:#374151\">Hola,</p>\n    <p style=\"margin:0 0 24px;font-size:15px;color:#4B5563;line-height:1.6\">Gracias por tu interés en Paciente IA. {{ $('Code Enrich').item.json.sector.metric }}</p>\n    <h2 style=\"margin:0 0 16px;font-size:18px;color:#111827\">¿Qué incluyen tus 14 días gratis?</h2>\n    <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td>\n      <p style=\"margin:0 0 10px;font-size:14px;color:#4B5563\">✅ &nbsp;Recordatorios automáticos por WhatsApp</p>\n      <p style=\"margin:0 0 10px;font-size:14px;color:#4B5563\">✅ &nbsp;Confirmación y reagendamiento sin llamar al paciente</p>\n      <p style=\"margin:0 0 10px;font-size:14px;color:#4B5563\">✅ &nbsp;Dashboard con métricas de asistencia en tiempo real</p>\n      <p style=\"margin:0 0 24px;font-size:14px;color:#4B5563\">✅ &nbsp;Sin tarjeta de crédito · Cancela cuando quieras</p>\n    </td></tr></table>\n    <table width=\"100%\"><tr><td align=\"center\">\n      <a href=\"{{ $('Code Enrich').item.json.signupUrl }}\" style=\"display:inline-block;background:#7C3AED;color:#fff;font-size:16px;font-weight:600;text-decoration:none;padding:16px 40px;border-radius:10px\">{{ $('Code Enrich').item.json.sector.ctaLabel }} →</a>\n    </td></tr></table>\n  </td></tr>\n  <tr><td style=\"padding:24px 40px;border-top:1px solid #F3F4F6\">\n    <p style=\"margin:0;font-size:12px;color:#9CA3AF;text-align:center\">Recibiste este email porque te registraste en pacienteia.com.<br>Si no fuiste tú, ignora este mensaje.</p>\n  </td></tr>\n</table>\n</td></tr></table></body></html>"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "PacienteIA SMTP"
+        }
+      }
+    },
+    {
+      "id": "node-06-wait-1d",
+      "name": "Esperar 1 día",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1280, 300],
+      "parameters": {
+        "amount": 1,
+        "unit": "days",
+        "resume": "timeInterval"
+      },
+      "webhookId": "wait-1d-landing-leads"
+    },
+    {
+      "id": "node-07-check-status-1",
+      "name": "Verificar Status 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/landing_leads",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "email", "value": "=eq.{{ $('Code Enrich').item.json.email }}" },
+            { "name": "select", "value": "status,email" },
+            { "name": "limit", "value": "1" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-08-if-converted-1",
+      "name": "¿Convertido? (1)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1760, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "converted",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-09-noop-end-1",
+      "name": "Fin — Ya Convirtió (1)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2000, 100],
+      "parameters": {}
+    },
+    {
+      "id": "node-10-email-followup",
+      "name": "Email 2 — Follow-up",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2000, 420],
+      "parameters": {
+        "fromEmail": "={{ $('Code Enrich').item.json.fromEmail }}",
+        "fromName": "={{ $('Code Enrich').item.json.fromName }}",
+        "toEmail": "={{ $('Code Enrich').item.json.email }}",
+        "subject": "=¿Todavía buscas reducir tus no-shows?",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;padding:0;background:#F4F4F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding:32px 16px\">\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;max-width:600px\">\n  <tr><td style=\"background:#7C3AED;padding:20px 40px\">\n    <h1 style=\"margin:0;color:#fff;font-size:20px;font-weight:700\">Paciente IA</h1>\n  </td></tr>\n  <tr><td style=\"padding:40px\">\n    <p style=\"margin:0 0 16px;font-size:16px;color:#374151\">Hola,</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#4B5563;line-height:1.6\">Ayer te escribimos sobre Paciente IA. Sabemos que {{ $('Code Enrich').item.json.sector.pain }}.</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#374151;font-weight:600\">Así es como lo resolvemos para {{ $('Code Enrich').item.json.sector.label }}s como el tuyo:</p>\n    <p style=\"margin:0 0 12px;font-size:14px;color:#4B5563\">📱 &nbsp;Recordatorio 24h antes → el paciente confirma o reagenda con un click</p>\n    <p style=\"margin:0 0 12px;font-size:14px;color:#4B5563\">🔔 &nbsp;Segundo recordatorio 2h antes → cero excusas de \"me olvidé\"</p>\n    <p style=\"margin:0 0 28px;font-size:14px;color:#4B5563\">📊 &nbsp;Dashboard en tiempo real → ves tu tasa de asistencia mejorar semana a semana</p>\n    <table width=\"100%\"><tr><td align=\"center\">\n      <a href=\"{{ $('Code Enrich').item.json.signupUrl }}\" style=\"display:inline-block;background:#7C3AED;color:#fff;font-size:16px;font-weight:600;text-decoration:none;padding:16px 40px;border-radius:10px\">Ver cómo funciona en 2 min →</a>\n    </td></tr></table>\n  </td></tr>\n  <tr><td style=\"padding:20px 40px;border-top:1px solid #F3F4F6\">\n    <p style=\"margin:0;font-size:12px;color:#9CA3AF;text-align:center\">Recibes esto porque dejaste tu email en pacienteia.com.</p>\n  </td></tr>\n</table>\n</td></tr></table></body></html>"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "PacienteIA SMTP"
+        }
+      }
+    },
+    {
+      "id": "node-11-wait-2d",
+      "name": "Esperar 2 días",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2240, 420],
+      "parameters": {
+        "amount": 2,
+        "unit": "days",
+        "resume": "timeInterval"
+      },
+      "webhookId": "wait-2d-landing-leads"
+    },
+    {
+      "id": "node-12-check-status-2",
+      "name": "Verificar Status 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2480, 420],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/landing_leads",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "email", "value": "=eq.{{ $('Code Enrich').item.json.email }}" },
+            { "name": "select", "value": "status,email" },
+            { "name": "limit", "value": "1" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-13-if-converted-2",
+      "name": "¿Convertido? (2)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2720, 420],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-2",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "converted",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-14-noop-end-2",
+      "name": "Fin — Ya Convirtió (2)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2960, 220],
+      "parameters": {}
+    },
+    {
+      "id": "node-15-email-demo",
+      "name": "Email 3 — Oferta Demo",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2960, 540],
+      "parameters": {
+        "fromEmail": "={{ $('Code Enrich').item.json.fromEmail }}",
+        "fromName": "Miguel de Paciente IA",
+        "toEmail": "={{ $('Code Enrich').item.json.email }}",
+        "subject": "=¿Te ayudo a configurarlo en 10 minutos?",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;padding:0;background:#F4F4F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding:32px 16px\">\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;max-width:600px\">\n  <tr><td style=\"background:#7C3AED;padding:20px 40px\">\n    <h1 style=\"margin:0;color:#fff;font-size:20px;font-weight:700\">Paciente IA</h1>\n  </td></tr>\n  <tr><td style=\"padding:40px\">\n    <p style=\"margin:0 0 16px;font-size:16px;color:#374151\">Hola,</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#4B5563;line-height:1.6\">Soy Miguel, del equipo de Paciente IA. Te escribo directamente porque quiero asegurarme de que puedas ver el valor de la plataforma para tu {{ $('Code Enrich').item.json.sector.label.toLowerCase() }}.</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#4B5563;line-height:1.6\">{{ $('Code Enrich').item.json.sector.demoHook }}</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#374151;font-weight:600\">Te ofrezco una sesión de configuración gratuita de 10 minutos.</p>\n    <p style=\"margin:0 0 28px;font-size:14px;color:#4B5563\">Solo responde este email con tu nombre y el mejor horario para llamarte, y te agenda personalmente.</p>\n    <table width=\"100%\"><tr><td align=\"center\">\n      <a href=\"{{ $('Code Enrich').item.json.signupUrl }}\" style=\"display:inline-block;background:#7C3AED;color:#fff;font-size:16px;font-weight:600;text-decoration:none;padding:16px 40px;border-radius:10px\">Quiero mi configuración gratuita →</a>\n    </td></tr></table>\n    <p style=\"margin:24px 0 0;font-size:14px;color:#6B7280\">— Miguel<br><span style=\"color:#9CA3AF\">Equipo Paciente IA</span></p>\n  </td></tr>\n  <tr><td style=\"padding:20px 40px;border-top:1px solid #F3F4F6\">\n    <p style=\"margin:0;font-size:12px;color:#9CA3AF;text-align:center\">Recibes esto porque dejaste tu email en pacienteia.com.</p>\n  </td></tr>\n</table>\n</td></tr></table></body></html>"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "PacienteIA SMTP"
+        }
+      }
+    },
+    {
+      "id": "node-16-wait-4d",
+      "name": "Esperar 4 días",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [3200, 540],
+      "parameters": {
+        "amount": 4,
+        "unit": "days",
+        "resume": "timeInterval"
+      },
+      "webhookId": "wait-4d-landing-leads"
+    },
+    {
+      "id": "node-17-check-status-3",
+      "name": "Verificar Status 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3440, 540],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/landing_leads",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "email", "value": "=eq.{{ $('Code Enrich').item.json.email }}" },
+            { "name": "select", "value": "status,email" },
+            { "name": "limit", "value": "1" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-18-if-converted-3",
+      "name": "¿Convertido? (3)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3680, 540],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "cond-3",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "converted",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-19-noop-end-3",
+      "name": "Fin — Ya Convirtió (3)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3920, 340],
+      "parameters": {}
+    },
+    {
+      "id": "node-20-mark-cold",
+      "name": "Marcar Lead Cold",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [3920, 660],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/landing_leads",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "email", "value": "=eq.{{ $('Code Enrich').item.json.email }}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={ \"status\": \"cold\" }",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-21-email-lastchance",
+      "name": "Email 4 — Última Oportunidad",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [4160, 660],
+      "parameters": {
+        "fromEmail": "={{ $('Code Enrich').item.json.fromEmail }}",
+        "fromName": "={{ $('Code Enrich').item.json.fromName }}",
+        "toEmail": "={{ $('Code Enrich').item.json.email }}",
+        "subject": "=Tu prueba gratuita de Paciente IA vence en 48 horas",
+        "emailType": "html",
+        "message": "=<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;padding:0;background:#F4F4F7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif\">\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr><td align=\"center\" style=\"padding:32px 16px\">\n<table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#fff;border-radius:12px;overflow:hidden;max-width:600px\">\n  <tr><td style=\"background:linear-gradient(135deg,#7C3AED,#EC4899);padding:20px 40px\">\n    <h1 style=\"margin:0;color:#fff;font-size:20px;font-weight:700\">Paciente IA</h1>\n  </td></tr>\n  <tr><td style=\"padding:40px\">\n    <p style=\"margin:0 0 16px;font-size:16px;color:#374151\">Hola,</p>\n    <p style=\"margin:0 0 20px;font-size:15px;color:#4B5563;line-height:1.6\">Esta es la última vez que te escribimos sobre tu prueba gratuita. No queremos molestar; solo queremos asegurarnos de que no pierdas la oportunidad.</p>\n    <div style=\"background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:16px 20px;margin:0 0 24px\">\n      <p style=\"margin:0;font-size:14px;color:#92400E;font-weight:600\">⏰ &nbsp;Tu acceso gratuito queda reservado solo 48 horas más.</p>\n    </div>\n    <p style=\"margin:0 0 8px;font-size:14px;color:#4B5563\">Lo que obtienes al activar hoy:</p>\n    <p style=\"margin:0 0 8px;font-size:14px;color:#4B5563\">→ &nbsp;14 días completos para tu {{ $('Code Enrich').item.json.sector.label.toLowerCase() }}</p>\n    <p style=\"margin:0 0 8px;font-size:14px;color:#4B5563\">→ &nbsp;Recordatorios WhatsApp configurados en 10 minutos</p>\n    <p style=\"margin:0 0 28px;font-size:14px;color:#4B5563\">→ &nbsp;Sin tarjeta de crédito</p>\n    <table width=\"100%\"><tr><td align=\"center\">\n      <a href=\"{{ $('Code Enrich').item.json.signupUrl }}\" style=\"display:inline-block;background:#7C3AED;color:#fff;font-size:16px;font-weight:600;text-decoration:none;padding:16px 40px;border-radius:10px\">Activar antes que expire →</a>\n    </td></tr></table>\n    <p style=\"margin:24px 0 0;font-size:13px;color:#9CA3AF;text-align:center\">Después de esta fecha no te escribiremos más. Siempre podrás volver en pacienteia.com.</p>\n  </td></tr>\n  <tr><td style=\"padding:20px 40px;border-top:1px solid #F3F4F6\">\n    <p style=\"margin:0;font-size:12px;color:#9CA3AF;text-align:center\">Recibiste esto porque dejaste tu email en pacienteia.com.</p>\n  </td></tr>\n</table>\n</td></tr></table></body></html>"
+      },
+      "credentials": {
+        "smtp": {
+          "id": "SMTP_CREDENTIAL_ID",
+          "name": "PacienteIA SMTP"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Landing": {
+      "main": [
+        [{ "node": "Code Enrich", "type": "main", "index": 0 }]
+      ]
+    },
+    "Code Enrich": {
+      "main": [
+        [{ "node": "Supabase UPSERT Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Supabase UPSERT Lead": {
+      "main": [
+        [{ "node": "Telegram Notificar Equipo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Telegram Notificar Equipo": {
+      "main": [
+        [{ "node": "Email 1 — Bienvenida", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email 1 — Bienvenida": {
+      "main": [
+        [{ "node": "Esperar 1 día", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 1 día": {
+      "main": [
+        [{ "node": "Verificar Status 1", "type": "main", "index": 0 }]
+      ]
+    },
+    "Verificar Status 1": {
+      "main": [
+        [{ "node": "¿Convertido? (1)", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Convertido? (1)": {
+      "main": [
+        [{ "node": "Fin — Ya Convirtió (1)", "type": "main", "index": 0 }],
+        [{ "node": "Email 2 — Follow-up", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email 2 — Follow-up": {
+      "main": [
+        [{ "node": "Esperar 2 días", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 2 días": {
+      "main": [
+        [{ "node": "Verificar Status 2", "type": "main", "index": 0 }]
+      ]
+    },
+    "Verificar Status 2": {
+      "main": [
+        [{ "node": "¿Convertido? (2)", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Convertido? (2)": {
+      "main": [
+        [{ "node": "Fin — Ya Convirtió (2)", "type": "main", "index": 0 }],
+        [{ "node": "Email 3 — Oferta Demo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Email 3 — Oferta Demo": {
+      "main": [
+        [{ "node": "Esperar 4 días", "type": "main", "index": 0 }]
+      ]
+    },
+    "Esperar 4 días": {
+      "main": [
+        [{ "node": "Verificar Status 3", "type": "main", "index": 0 }]
+      ]
+    },
+    "Verificar Status 3": {
+      "main": [
+        [{ "node": "¿Convertido? (3)", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Convertido? (3)": {
+      "main": [
+        [{ "node": "Fin — Ya Convirtió (3)", "type": "main", "index": 0 }],
+        [{ "node": "Marcar Lead Cold", "type": "main", "index": 0 }]
+      ]
+    },
+    "Marcar Lead Cold": {
+      "main": [
+        [{ "node": "Email 4 — Última Oportunidad", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "pacienteia-landing-leads-nurture"
+  }
+}

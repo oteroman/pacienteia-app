@@ -70,7 +70,7 @@ export function GatedActionButton({
         className={
           isSoft
             ? `${base} bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100 cursor-pointer`
-            : `${base} bg-gray-50 border border-gray-200 text-gray-400 cursor-not-allowed`
+            : `${base} bg-mist border border-fog text-slate cursor-not-allowed`
         }
       >
         <span aria-hidden="true">{isSoft ? '⚠️' : '🔒'}</span>

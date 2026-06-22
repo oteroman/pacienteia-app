@@ -41,9 +41,13 @@ export async function POST(req: NextRequest) {
     .eq('organization_id', clinic_id).is('deleted_at', null)
     .order('created_at', { ascending: true }).limit(1).single()
 
+  if (!branch) {
+    return NextResponse.json({ error: 'branch_not_configured' }, { status: 422 })
+  }
+
   const intakeId = await processIntake({
     organizationId: clinic_id,
-    branchId:       branch?.id ?? clinic_id,
+    branchId:       branch.id,
     channel:        'webform',
     contactName:  typeof contact_name  === 'string' ? contact_name  : undefined,
     contactPhone: typeof contact_phone === 'string' ? contact_phone : undefined,

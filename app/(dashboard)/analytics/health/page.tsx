@@ -32,8 +32,8 @@ export default async function HealthDashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customer Health</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-ink">Customer Health</h1>
+          <p className="text-sm text-slate mt-1">
             Score 0-100 · {clinics.length} cuentas activas · datos en tiempo real
           </p>
         </div>
@@ -52,7 +52,7 @@ export default async function HealthDashboardPage({
               {totalAlerts} tarea{totalAlerts !== 1 ? 's' : ''} pendiente{totalAlerts !== 1 ? 's' : ''} →
             </Link>
           )}
-          <span className="text-xs text-gray-300 font-mono">internal</span>
+          <span className="text-xs text-fog font-mono">internal</span>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default async function HealthDashboardPage({
       {/* D. All accounts */}
       <Section title="Todas las cuentas">
         {clinics.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">
+          <p className="text-sm text-slate text-center py-6">
             Sin datos. Las clínicas aparecen aquí cuando tienen actividad registrada.
           </p>
         ) : (
@@ -101,24 +101,24 @@ function ClinicTable({ rows, showScoreBreakdown = false }: {
     <div className="overflow-x-auto -mx-2">
       <table className="w-full text-sm min-w-[640px]">
         <thead>
-          <tr className="text-left text-gray-400 border-b border-gray-100">
-            <th className="pb-2 font-medium pl-2">Clínica</th>
-            <th className="pb-2 font-medium text-center">Score</th>
-            <th className="pb-2 font-medium text-center">Estado</th>
-            <th className="pb-2 font-medium text-right">Uso leads</th>
-            <th className="pb-2 font-medium text-right">Citas trend</th>
-            <th className="pb-2 font-medium">Alertas</th>
+          <tr className="text-left text-slate border-b border-fog">
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] pl-2">Clínica</th>
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-center">Score</th>
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-center">Estado</th>
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Uso leads</th>
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Citas trend</th>
+            <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Alertas</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-fog">
           {rows.map((c) => (
-            <tr key={c.clinicId} className="text-gray-800 hover:bg-gray-50/50">
+            <tr key={c.clinicId} className="text-ink hover:bg-mist/50">
               <td className="py-3 pl-2">
                 <div className="font-medium leading-tight">{c.clinicName}</div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <PlanBadge plan={c.plan} />
                   {c.lastActivityDays > 14 && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-slate">
                       · sin actividad hace {c.lastActivityDays}d
                     </span>
                   )}
@@ -142,7 +142,7 @@ function ClinicTable({ rows, showScoreBreakdown = false }: {
                     <AlertBadge key={a} alert={a} />
                   ))}
                   {c.alerts.length === 0 && (
-                    <span className="text-xs text-gray-300">—</span>
+                    <span className="text-xs text-fog">—</span>
                   )}
                 </div>
               </td>
@@ -160,12 +160,12 @@ function SummaryCard({ label, value, color }: {
   label: string; value: number
   color: 'red' | 'amber' | 'green' | 'blue'
 }) {
-  const bg = { red: 'bg-red-50 border-red-100', amber: 'bg-amber-50 border-amber-100', green: 'bg-green-50 border-green-100', blue: 'bg-blue-50 border-blue-100' }[color]
-  const vc = { red: 'text-red-700', amber: 'text-amber-700', green: 'text-green-700', blue: 'text-blue-700' }[color]
+  const bg = { red: 'bg-red-50 border-red-100', amber: 'bg-amber-50 border-amber-100', green: 'bg-lima-50 border-green-100', blue: 'bg-blue-50 border-blue-100' }[color]
+  const vc = { red: 'text-red-700', amber: 'text-amber-700', green: 'text-lima-700', blue: 'text-blue-700' }[color]
   return (
     <div className={`rounded-xl p-4 text-center space-y-1 border ${bg}`}>
       <p className={`text-3xl font-bold ${vc}`}>{value}</p>
-      <p className="text-xs text-gray-500 leading-tight">{label}</p>
+      <p className="text-xs text-slate leading-tight">{label}</p>
     </div>
   )
 }
@@ -173,9 +173,9 @@ function SummaryCard({ label, value, color }: {
 function Section({ title, titleColor = 'gray', children }: {
   title: string; titleColor?: 'red' | 'green' | 'gray'; children: React.ReactNode
 }) {
-  const tc = { red: 'text-red-700', green: 'text-green-700', gray: 'text-gray-700' }[titleColor]
+  const tc = { red: 'text-red-700', green: 'text-lima-700', gray: 'text-slate' }[titleColor]
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-fog shadow-xs p-6 space-y-4">
       <h2 className={`text-sm font-semibold ${tc}`}>{title}</h2>
       {children}
     </div>
@@ -184,7 +184,7 @@ function Section({ title, titleColor = 'gray', children }: {
 
 function ScoreCell({ score }: { score: ClinicHealth['score'] }) {
   const total = score.total
-  const barColor = total >= 70 ? 'bg-green-500' : total >= 45 ? 'bg-amber-400' : 'bg-red-500'
+  const barColor = total >= 70 ? 'bg-lima-500' : total >= 45 ? 'bg-amber-400' : 'bg-red-500'
   const breakdown = [
     `Recencia: ${score.recency}/20`,
     `Volumen: ${score.volume}/20`,
@@ -196,7 +196,7 @@ function ScoreCell({ score }: { score: ClinicHealth['score'] }) {
   return (
     <div className="flex flex-col items-center gap-1" title={breakdown}>
       <span className="text-base font-bold tabular-nums">{total}</span>
-      <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="w-14 h-1.5 bg-[#F3F6F9] rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${barColor}`} style={{ width: `${total}%` }} />
       </div>
     </div>
@@ -205,34 +205,34 @@ function ScoreCell({ score }: { score: ClinicHealth['score'] }) {
 
 function StatusBadge({ status }: { status: HealthStatus }) {
   const map: Record<HealthStatus, { label: string; cls: string }> = {
-    healthy:  { label: 'Saludable', cls: 'bg-green-50 text-green-700' },
+    healthy:  { label: 'Saludable', cls: 'bg-lima-50 text-lima-700' },
     watch:    { label: 'Vigilar',   cls: 'bg-amber-50 text-amber-700' },
     at_risk:  { label: 'En riesgo', cls: 'bg-red-50 text-red-700' },
-    churned:  { label: 'Inactivo',  cls: 'bg-gray-100 text-gray-500' },
+    churned:  { label: 'Inactivo',  cls: 'bg-[#F3F6F9] text-slate' },
   }
   const { label, cls } = map[status]
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{label}</span>
 }
 
 function PlanBadge({ plan }: { plan: string }) {
-  const cls = plan === 'premium' ? 'bg-purple-50 text-purple-700'
+  const cls = plan === 'premium' ? 'bg-ai-50 text-ai-600'
             : plan === 'pro'     ? 'bg-blue-50 text-blue-700'
-            : plan === 'basic'   ? 'bg-gray-100 text-gray-600'
-                                 : 'bg-gray-50 text-gray-400'
+            : plan === 'basic'   ? 'bg-[#F3F6F9] text-slate'
+                                 : 'bg-mist text-slate'
   return <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${cls}`}>{plan}</span>
 }
 
 function UsageCell({ pct }: { pct: number }) {
-  if (pct === 0) return <span className="text-xs text-gray-300">—</span>
-  const cls = pct >= 90 ? 'text-red-600' : pct >= 75 ? 'text-amber-600' : 'text-gray-500'
+  if (pct === 0) return <span className="text-xs text-fog">—</span>
+  const cls = pct >= 90 ? 'text-red-600' : pct >= 75 ? 'text-amber-600' : 'text-slate'
   return <span className={`text-sm font-medium ${cls}`}>{pct}%</span>
 }
 
 function TrendCell({ trend }: { trend: number }) {
-  if (trend === 0) return <span className="text-xs text-gray-300">→ estable</span>
+  if (trend === 0) return <span className="text-xs text-fog">→ estable</span>
   const up = trend > 0
   return (
-    <span className={`text-xs font-medium ${up ? 'text-green-600' : 'text-red-500'}`}>
+    <span className={`text-xs font-medium ${up ? 'text-lima-600' : 'text-red-500'}`}>
       {up ? '↑' : '↓'} {Math.abs(trend)}%
     </span>
   )
@@ -241,11 +241,11 @@ function TrendCell({ trend }: { trend: number }) {
 function AlertBadge({ alert }: { alert: AlertType }) {
   const map: Record<AlertType, { label: string; cls: string }> = {
     at_risk:       { label: 'En riesgo',      cls: 'bg-red-50 text-red-600' },
-    churned:       { label: 'Inactivo',       cls: 'bg-gray-100 text-gray-500' },
-    inactive:      { label: 'Sin actividad',  cls: 'bg-gray-100 text-gray-500' },
+    churned:       { label: 'Inactivo',       cls: 'bg-[#F3F6F9] text-slate' },
+    inactive:      { label: 'Sin actividad',  cls: 'bg-[#F3F6F9] text-slate' },
     declining:     { label: 'Caída',          cls: 'bg-red-50 text-red-600' },
     high_friction: { label: 'Alta fricción',  cls: 'bg-orange-50 text-orange-600' },
-    upgrade_ready: { label: 'Upgrade ↑',      cls: 'bg-green-50 text-green-700' },
+    upgrade_ready: { label: 'Upgrade ↑',      cls: 'bg-lima-50 text-lima-700' },
   }
   const { label, cls } = map[alert]
   return <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${cls}`}>{label}</span>

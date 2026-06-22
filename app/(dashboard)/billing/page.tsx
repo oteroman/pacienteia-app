@@ -39,7 +39,7 @@ const ALL_FEATURES: PlanFeature[] = [
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   trialing:  { label: 'Trial activo',    className: 'bg-yellow-100 text-yellow-800' },
-  active:    { label: 'Activo',          className: 'bg-green-100 text-green-700' },
+  active:    { label: 'Activo',          className: 'bg-lima-100 text-lima-700' },
   overdue:   { label: 'Pago pendiente',  className: 'bg-orange-100 text-orange-700' },
   cancelled: { label: 'Cancelado',       className: 'bg-red-100 text-red-600' },
 }
@@ -87,7 +87,7 @@ export default async function BillingPage() {
       )}
 
       {/* ── PLAN HEADER ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-fog shadow-xs p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -96,9 +96,9 @@ export default async function BillingPage() {
                 {statusCfg.label}
               </span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Plan {limits.name}</h1>
+            <h1 className="text-xl font-bold text-ink">Plan {limits.name}</h1>
             {sub.plan !== 'premium' && (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-slate">
                 S/{limits.price_pen.toLocaleString('es-PE')}/mes
               </p>
             )}
@@ -112,11 +112,11 @@ export default async function BillingPage() {
         </div>
 
         {/* Trial countdown or renewal date */}
-        <div className="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
+        <div className="mt-4 pt-4 border-t border-fog text-sm text-slate">
           {isTrial ? (
             <p>
               Trial gratuito · vence el{' '}
-              <strong className="text-gray-900">
+              <strong className="text-ink">
                 {sub.trial_ends_at
                   ? new Date(sub.trial_ends_at).toLocaleDateString('es-PE', {
                       day: '2-digit', month: 'long', year: 'numeric',
@@ -128,21 +128,21 @@ export default async function BillingPage() {
           ) : sub.current_period_end ? (
             <p>
               Próxima renovación:{' '}
-              <strong className="text-gray-900">
+              <strong className="text-ink">
                 {new Date(sub.current_period_end).toLocaleDateString('es-PE', {
                   day: '2-digit', month: 'long', year: 'numeric',
                 })}
               </strong>
             </p>
           ) : (
-            <p className="text-gray-400">Facturación gestionada manualmente · contacta soporte</p>
+            <p className="text-slate">Facturación gestionada manualmente · contacta soporte</p>
           )}
         </div>
       </div>
 
       {/* ── USO DEL MES ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
-        <h2 className="text-sm font-semibold text-gray-700">Uso este mes</h2>
+      <div className="bg-white rounded-2xl border border-fog shadow-xs p-6 space-y-5">
+        <h2 className="text-sm text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Uso este mes</h2>
 
         <UsageBar label="Leads" gate={planStatus.usage.leads} />
         <UsageBar label="Citas" gate={planStatus.usage.appointments} />
@@ -152,23 +152,23 @@ export default async function BillingPage() {
         />
 
         {Object.values(planStatus.usage).some(g => g.limit === UNLIMITED) && (
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-slate">
             Los recursos con límite "Ilimitado" no tienen barra de progreso.
           </p>
         )}
       </div>
 
       {/* ── FEATURES INCLUIDAS ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">
+      <div className="bg-white rounded-2xl border border-fog shadow-xs p-6">
+        <h2 className="text-sm font-semibold text-slate mb-4">
           Qué incluye tu plan {limits.name}
         </h2>
         <ul className="space-y-2.5">
           {ALL_FEATURES.map((feature) => {
             const included = includedFeatures.includes(feature)
             return (
-              <li key={feature} className={`flex items-center gap-2.5 text-sm ${included ? 'text-gray-700' : 'text-gray-300'}`}>
-                <span className={`text-base ${included ? 'text-green-500' : 'text-gray-200'}`}>
+              <li key={feature} className={`flex items-center gap-2.5 text-sm ${included ? 'text-slate' : 'text-fog'}`}>
+                <span className={`text-base ${included ? 'text-lima-500' : 'text-fog'}`}>
                   {included ? '✓' : '✗'}
                 </span>
                 <span>{FEATURE_LABELS[feature]}</span>
@@ -216,9 +216,9 @@ export default async function BillingPage() {
       )}
 
       {/* ── BILLING INFO (layer preparada) ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-2">Facturación</h2>
-        <p className="text-sm text-gray-500 mb-3">
+      <div className="bg-white rounded-2xl border border-fog shadow-xs p-5">
+        <h2 className="text-sm font-semibold text-slate mb-2">Facturación</h2>
+        <p className="text-sm text-slate mb-3">
           Para cambiar de plan, gestionar tu facturación o solicitar una boleta/factura,
           escríbenos directamente.
         </p>
@@ -229,7 +229,7 @@ export default async function BillingPage() {
           >
             billing@pacienteia.com
           </a>
-          <span className="text-xs text-gray-300 flex items-center px-3 py-1.5 border border-gray-100 rounded-lg">
+          <span className="text-xs text-fog flex items-center px-3 py-1.5 border border-fog rounded-lg">
             Próximamente: Yape · Niubiz · Izipay
           </span>
         </div>

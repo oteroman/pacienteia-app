@@ -18,6 +18,7 @@ export type PlanFeature =
   | 'csv_export'               // Export patients/leads to CSV (Pro+)
   | 'roi_dashboard'            // S/ recovered, citas saved, savings (Premium)
   | 'api_webhooks'             // External API + inbound webhooks (Premium)
+  | 'multi_branch'             // Multiple branches / locations (Premium)
 
 export interface PlanLimits {
   name: string
@@ -48,21 +49,21 @@ export const PLAN_CONFIG: Record<Plan, PlanLimits> = {
 
   basic: {
     name: 'Básico',
-    price_pen: 390,
+    price_pen: 99,
     users: 1,
-    leads_per_month: 50,
-    appointments_per_month: 150,
-    n8n_flows: 1,
+    leads_per_month: 100,
+    appointments_per_month: 300,
+    n8n_flows: 2,
     features: ['reputation_shield'],
   },
 
   pro: {
     name: 'Pro',
-    price_pen: 890,
+    price_pen: 249,
     users: 3,
-    leads_per_month: 200,
-    appointments_per_month: 500,
-    n8n_flows: 3,
+    leads_per_month: 300,
+    appointments_per_month: 800,
+    n8n_flows: 5,
     features: [
       'reputation_shield',
       'advanced_confirmation',
@@ -76,9 +77,9 @@ export const PLAN_CONFIG: Record<Plan, PlanLimits> = {
 
   premium: {
     name: 'Premium',
-    price_pen: 1490,
+    price_pen: 499,
     users: UNLIMITED,
-    leads_per_month: 1000,
+    leads_per_month: UNLIMITED,
     appointments_per_month: UNLIMITED,
     n8n_flows: UNLIMITED,
     features: [
@@ -91,6 +92,7 @@ export const PLAN_CONFIG: Record<Plan, PlanLimits> = {
       'csv_export',
       'roi_dashboard',
       'api_webhooks',
+      'multi_branch',
     ],
   },
 }

@@ -16,7 +16,7 @@ function barColor(result: UsageGateResult['result']): string {
 function textColor(result: UsageGateResult['result']): string {
   if (result === 'hard_blocked') return 'text-red-600'
   if (result === 'soft_blocked') return 'text-yellow-700'
-  return 'text-gray-600'
+  return 'text-slate'
 }
 
 export function UsageBar({ label, gate, unit = '' }: UsageBarProps) {
@@ -25,9 +25,9 @@ export function UsageBar({ label, gate, unit = '' }: UsageBarProps) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
-        <span className="font-medium text-gray-700">{label}</span>
+        <span className="font-medium text-slate">{label}</span>
         {isUnlimited ? (
-          <span className="text-gray-400 text-xs">Ilimitado</span>
+          <span className="text-slate text-xs">Ilimitado</span>
         ) : (
           <span className={`text-xs font-medium ${textColor(gate.result)}`}>
             {gate.used}{unit} / {gate.limit}{unit}
@@ -41,7 +41,7 @@ export function UsageBar({ label, gate, unit = '' }: UsageBarProps) {
       </div>
 
       {!isUnlimited && (
-        <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-2 w-full rounded-full bg-[#F3F6F9] overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${barColor(gate.result)}`}
             style={{ width: `${Math.min(gate.pct, 100)}%` }}

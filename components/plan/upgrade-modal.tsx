@@ -127,17 +127,17 @@ export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-lg leading-none">{copy.icon}</span>
-              <h2 className="text-base font-bold text-gray-900">{copy.title}</h2>
+              <h2 className="text-base font-bold text-ink">{copy.title}</h2>
             </div>
             <button
               onClick={handleClose}
               aria-label="Cerrar"
-              className="text-gray-300 hover:text-gray-500 text-2xl leading-none flex-shrink-0 -mt-0.5"
+              className="text-fog hover:text-slate text-2xl leading-none flex-shrink-0 -mt-0.5"
             >
               ×
             </button>
           </div>
-          <p className="text-sm text-gray-500 leading-relaxed">{copy.subtitle}</p>
+          <p className="text-sm text-slate leading-relaxed">{copy.subtitle}</p>
         </div>
 
         {/* Benefit callout */}
@@ -167,14 +167,14 @@ export function UpgradeModal({ resource, gate, onClose }: UpgradeModalProps) {
             <Link
               href={copy.secondaryHref}
               onClick={handleSecondary}
-              className="w-full text-center text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-center text-sm text-slate hover:text-ink border border-fog px-4 py-2.5 rounded-lg hover:bg-mist transition-colors"
             >
               {copy.secondaryCta}
             </Link>
           ) : (
             <button
               onClick={handleClose}
-              className="w-full text-sm text-gray-500 hover:text-gray-800 border border-gray-200 px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-sm text-slate hover:text-ink border border-fog px-4 py-2.5 rounded-lg hover:bg-mist transition-colors"
             >
               {copy.secondaryCta}
             </button>

@@ -27,10 +27,10 @@ export default async function EditPatientPage({ params }: PageProps) {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Editar paciente</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{patient.full_name}</p>
+        <h1 className="text-2xl font-bold text-ink">Editar paciente</h1>
+        <p className="text-sm text-slate mt-0.5">{patient.full_name}</p>
       </div>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-fog shadow-xs p-6">
         <PatientForm
           defaultValues={patient}
           action={updatePatient.bind(null, id)}

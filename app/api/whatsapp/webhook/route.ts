@@ -1,6 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse }  from 'next/server'
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { createAdminClient }           from '@/lib/supabase/admin'
+import { decryptToken }                from '@/lib/crypto/whatsapp-token'
+import { extractInboundMessage }       from '@/lib/whatsapp/extract'
+import { handleReminderReply }         from '@/lib/whatsapp/reminder-reply'
+import { handleRescheduleSelection }   from '@/lib/whatsapp/reschedule'
+import { handleFollowupReply }         from '@/lib/whatsapp/followup-reply'
+import { handleReactivationReply }     from '@/lib/whatsapp/reactivation-reply'
+import { handleBackfillReply }                    from '@/lib/whatsapp/backfill-reply'
+import { handleFlashOfferReply }                  from '@/lib/whatsapp/flash-offer-reply'
+import { runNluPipeline }                         from '@/lib/whatsapp/nlu'
+import { handleBookingFlow }                      from '@/lib/whatsapp/booking-flow'
+import { isStaffPhone, handleStaffVoiceNote }     from '@/lib/voice/handle-staff-voice'
+import { parseStaffTextCommand }                   from '@/lib/voice/parse-staff-text'
+import { sendWhatsAppText }                        from '@/lib/whatsapp/send'
+import { isWaitingRoomTrigger, handleWaitingRoomEntry } from '@/lib/whatsapp/waiting-room'
 
 // GET /api/whatsapp/webhook
 // Meta verification handshake — responds with hub.challenge on success.
@@ -23,21 +37,16 @@ export async function GET(req: NextRequest) {
 
 // POST /api/whatsapp/webhook
 // Receives WhatsApp Cloud API events from Meta.
-// Validates HMAC-SHA256 signature, resolves branch by phone_number_id,
-// writes raw payload to webhook_queue, and returns 200 immediately.
+//
+// HMAC validation is per-clinic: each clinic has their own Meta app with
+// their own App Secret, stored encrypted in branch_whatsapp_config.app_secret_enc.
+// Falls back to the global WHATSAPP_APP_SECRET env var for branches that
+// haven't configured their own secret yet (backward compatibility).
 export async function POST(req: NextRequest) {
-  // Read raw body as text before any transformation.
-  // Meta computes HMAC over the exact bytes it sends; any re-encoding or
-  // JSON round-trip would alter whitespace/escaping and break signature validation.
-  const rawBody = await req.text()
-
+  const rawBody   = await req.text()
   const signature = req.headers.get('x-hub-signature-256') ?? ''
-  const appSecret = process.env.WHATSAPP_APP_SECRET ?? ''
-  if (!appSecret || !isSignatureValid(rawBody, signature, appSecret)) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  }
 
-  // Parse — on malformed JSON ack and drop (Meta would retry forever otherwise)
+  // Parse payload first to extract phone_number_id for per-clinic secret lookup.
   let payload: Record<string, unknown>
   try {
     payload = JSON.parse(rawBody)
@@ -45,34 +54,30 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 200 })
   }
 
-  // Only handle WhatsApp Business Account events
   if (payload.object !== 'whatsapp_business_account') {
     return new NextResponse(null, { status: 200 })
   }
 
   const phoneNumberId = extractPhoneNumberId(payload)
-  const eventId       = extractEventId(payload)       // wamid or status id, for log tracing
-
-  if (!phoneNumberId) {
-    // Valid signature but missing routing key — unusual, log for support
-    console.warn('[wa-webhook] missing phone_number_id', { eventId })
-    return new NextResponse(null, { status: 200 })
-  }
+  const eventId       = extractEventId(payload)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
+  // Look up branch config to resolve the correct App Secret for HMAC validation.
   const { data: config } = await sb
     .from('branch_whatsapp_config')
-    .select('branch_id, organization_id')
-    .eq('phone_number_id', phoneNumberId)
+    .select('branch_id, organization_id, app_secret_enc')
+    .eq('phone_number_id', phoneNumberId ?? '')
     .eq('status', 'active')
-    .single()
+    .maybeSingle()
+
+  const appSecret = resolveAppSecret(config?.app_secret_enc)
+  if (!appSecret || !isSignatureValid(rawBody, signature, appSecret)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
 
   if (!config) {
-    // phone_number_id received but no active branch configured.
-    // Could be a test number, a recently disconnected branch, or a misconfiguration.
-    // Log for support diagnostics; still return 200 so Meta does not retry.
     console.warn('[wa-webhook] no active branch for phone_number_id', { phoneNumberId, eventId })
     return new NextResponse(null, { status: 200 })
   }
@@ -83,15 +88,209 @@ export async function POST(req: NextRequest) {
     phone_number_id: phoneNumberId,
     source:          'whatsapp',
     payload,
-    // eventId is not stored as a separate column to avoid a migration;
-    // the consumer (n8n) can extract it from payload->entry->changes->value->messages[0].id
-    // for idempotency checks on its side.
   })
+
+  const extracted = extractInboundMessage(payload)
+  if (extracted) {
+    // ── Staff voice note — intercept before patient flow ───────────────────
+    if (extracted.mediaType === 'audio' && extracted.mediaUrl) {
+      const staffDetected = await isStaffPhone(sb, config.organization_id, extracted.contactPhone)
+      if (staffDetected) {
+        handleStaffVoiceNote({
+          organizationId: config.organization_id,
+          branchId:       config.branch_id,
+          staffPhone:     extracted.contactPhone,
+          mediaId:        extracted.mediaUrl,
+        }).catch((err) => console.error('[voice]', err))
+        return new NextResponse(null, { status: 200 })
+      }
+    }
+
+    const { data: conv } = await sb
+      .from('conversations')
+      .upsert({
+        organization_id:      config.organization_id,
+        branch_id:            config.branch_id,
+        contact_phone:        extracted.contactPhone,
+        contact_name:         extracted.contactName,
+        channel:              'whatsapp',
+        status:               'open',
+        last_message_at:      new Date().toISOString(),
+        last_message_preview: extracted.body?.slice(0, 120) ?? '[media]',
+        updated_at:           new Date().toISOString(),
+      }, {
+        onConflict: 'organization_id,branch_id,contact_phone,channel',
+        ignoreDuplicates: false,
+      })
+      .select('id')
+      .single()
+
+    let messageId: string | null = null
+    if (conv?.id) {
+      await sb.rpc('increment_unread', { p_conversation_id: conv.id })
+      const { data: msgRow } = await sb.from('messages').upsert({
+        conversation_id: conv.id,
+        organization_id: config.organization_id,
+        wamid:           extracted.wamid,
+        direction:       'inbound',
+        body:            extracted.body,
+        media_type:      extracted.mediaType,
+        media_url:       extracted.mediaUrl,
+        status:          'received',
+      }, { onConflict: 'wamid', ignoreDuplicates: true }).select('id').single()
+      messageId = msgRow?.id ?? null
+    }
+
+    if (extracted.body && extracted.mediaType === 'text') {
+      // Staff text command — intercept before patient flows
+      const isStaffText = await isStaffPhone(sb, config.organization_id, extracted.contactPhone)
+      if (isStaffText) {
+        const parsed = await parseStaffTextCommand(
+          extracted.body,
+          config.organization_id,
+          config.branch_id,
+        )
+
+        // Build pre-filled appointment URL if it's an appointment request
+        let bookingUrl: string | null = null
+        if (parsed.isAppointmentRequest) {
+          const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.pacienteia.com'
+          const params = new URLSearchParams()
+          if (parsed.patientId)      params.set('patient_id',      parsed.patientId)
+          if (parsed.professionalId) params.set('professional_id', parsed.professionalId)
+          if (parsed.date)           params.set('date',            parsed.date)
+          if (parsed.time)           params.set('time',            parsed.time)
+          bookingUrl = `${base}/appointments/new?${params.toString()}`
+        }
+
+        const lines: string[] = [`**Instrucción de staff:**\n${extracted.body}`]
+        if (parsed.patientName)      lines.push(`👤 Paciente: ${parsed.patientName}${parsed.patientId ? ' ✓' : ' ⚠️ no encontrado'}`)
+        if (parsed.professionalName) lines.push(`👨‍⚕️ Profesional: ${parsed.professionalName}${parsed.professionalId ? ' ✓' : ' ⚠️ no encontrado'}`)
+        if (parsed.date)             lines.push(`📅 Fecha: ${parsed.date}${parsed.time ? ` a las ${parsed.time}` : ''}`)
+        if (parsed.serviceHint)      lines.push(`💉 Servicio: ${parsed.serviceHint}`)
+        if (bookingUrl)              lines.push(`\n👉 **Agendar cita:** ${bookingUrl}`)
+
+        await sb.from('copilot_tasks').insert({
+          organization_id: config.organization_id,
+          branch_id:       config.branch_id,
+          patient_id:      parsed.patientId ?? null,
+          title:           parsed.isAppointmentRequest
+            ? `📅 Cita: ${parsed.patientName ?? 'paciente'} — ${parsed.date ?? 'fecha pendiente'}`
+            : `📝 Staff: ${extracted.body.slice(0, 80)}`,
+          description:     lines.join('\n'),
+          priority:        parsed.isAppointmentRequest ? 'high' : 'medium',
+          status:          'open',
+          source:          'whatsapp_staff',
+        })
+
+        const reply = parsed.isAppointmentRequest && bookingUrl
+          ? `✅ Entendido. Tarea creada para agendar cita de ${parsed.patientName ?? 'paciente'} el ${parsed.date ?? 'fecha indicada'}.\n\n👉 Agendar: ${bookingUrl}`
+          : '✅ Instrucción recibida. Tarea creada en el copiloto.'
+
+        await sendWhatsAppText({
+          branchId: config.branch_id,
+          to:       extracted.contactPhone,
+          body:     reply,
+        })
+        return new NextResponse(null, { status: 200 })
+      }
+
+      const bookingHandled = await handleBookingFlow({
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+      if (bookingHandled) {
+        return new NextResponse(null, { status: 200 })
+      }
+
+      // Waiting room — patient scans QR, sends "Sala de espera"
+      if (isWaitingRoomTrigger(extracted.body)) {
+        handleWaitingRoomEntry({
+          organizationId: config.organization_id,
+          branchId:       config.branch_id,
+          contactPhone:   extracted.contactPhone,
+          contactName:    extracted.contactName ?? null,
+        }).catch(err => console.error('[waiting-room]', err))
+        return new NextResponse(null, { status: 200 })
+      }
+
+      const rescheduleHandled = await handleRescheduleSelection({
+        sb,
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+
+      if (!rescheduleHandled) {
+        await handleReminderReply({
+          sb,
+          organizationId: config.organization_id,
+          branchId:       config.branch_id,
+          contactPhone:   extracted.contactPhone,
+          body:           extracted.body,
+        })
+      }
+
+      await handleFollowupReply({
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+      await handleReactivationReply({
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+      await handleBackfillReply({
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+      await handleFlashOfferReply({
+        organizationId: config.organization_id,
+        branchId:       config.branch_id,
+        contactPhone:   extracted.contactPhone,
+        body:           extracted.body,
+      })
+
+      if (conv?.id && messageId) {
+        runNluPipeline({
+          organizationId: config.organization_id,
+          branchId:       config.branch_id,
+          conversationId: conv.id,
+          messageId,
+          contactPhone:   extracted.contactPhone,
+          contactName:    extracted.contactName ?? null,
+          body:           extracted.body,
+        }).catch((err) => console.error('[nlu]', err))
+      }
+    }
+  }
 
   return new NextResponse(null, { status: 200 })
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Per-clinic App Secret takes priority over the global env var.
+// Falls back to WHATSAPP_APP_SECRET for branches configured before per-clinic
+// secrets were introduced (backward compatibility).
+function resolveAppSecret(encryptedSecret?: string | null): string {
+  if (encryptedSecret) {
+    try {
+      return decryptToken(encryptedSecret)
+    } catch {
+      console.error('[wa-webhook] failed to decrypt per-clinic app_secret — falling back to global')
+    }
+  }
+  return process.env.WHATSAPP_APP_SECRET ?? ''
+}
 
 function isSignatureValid(rawBody: string, signature: string, secret: string): boolean {
   if (!signature.startsWith('sha256=')) return false
@@ -116,8 +315,6 @@ function extractPhoneNumberId(payload: Record<string, unknown>): string | null {
   }
 }
 
-// Extracts the first traceable wamid from the payload (message event or status update).
-// Used only for logging — the full payload is stored in webhook_queue.payload JSONB.
 function extractEventId(payload: Record<string, unknown>): string | null {
   try {
     const entry    = (payload.entry    as unknown[])?.[0] as Record<string, unknown>

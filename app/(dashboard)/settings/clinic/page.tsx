@@ -27,14 +27,14 @@ export default async function ClinicSettingsPage({
     <div className="max-w-2xl mx-auto space-y-8">
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Perfil de clínica</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-ink">Perfil de clínica</h1>
+        <p className="text-sm text-slate mt-1">
           Estos datos se usan en las plantillas de respuesta y borradores IA.
         </p>
       </div>
 
       {guardado === '1' && (
-        <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 font-medium">
+        <div className="rounded-xl bg-lima-50 border border-lima-200 px-4 py-3 text-sm text-lima-700 font-medium">
           Cambios guardados correctamente.
         </div>
       )}
@@ -54,8 +54,8 @@ export default async function ClinicSettingsPage({
           </Field>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tono de marca <span className="text-gray-400 font-normal">(define el estilo de todas las respuestas)</span>
+            <label className="block text-sm font-medium text-slate mb-2">
+              Tono de marca <span className="text-slate font-normal">(define el estilo de todas las respuestas)</span>
             </label>
             <div className="grid grid-cols-2 gap-2">
               {TONES.map((tone) => (
@@ -69,7 +69,7 @@ export default async function ClinicSettingsPage({
                   />
                   <span className="block px-3 py-2.5 rounded-xl border text-sm
                     peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-700
-                    border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
+                    border-fog text-slate hover:border-fog transition-colors">
                     {TONE_LABELS[tone]}
                   </span>
                 </label>
@@ -163,14 +163,14 @@ export default async function ClinicSettingsPage({
 }
 
 // ── Layout helpers ────────────────────────────────────────────
-const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-300'
+const inputCls = 'w-full border border-fog rounded-xl px-3 py-2 text-sm text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-brand-300'
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border bg-white p-6 space-y-4">
       <div>
-        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
-        {hint && <p className="text-xs text-gray-400 mt-0.5">{hint}</p>}
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        {hint && <p className="text-xs text-slate mt-0.5">{hint}</p>}
       </div>
       {children}
     </div>
@@ -180,9 +180,9 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-medium text-slate mb-1">
         {label}
-        {hint && <span className="ml-1 text-gray-400 font-normal text-xs">{hint}</span>}
+        {hint && <span className="ml-1 text-slate font-normal text-xs">{hint}</span>}
       </label>
       {children}
     </div>

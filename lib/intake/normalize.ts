@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { IntakeIntent, IntakePriority } from './index'
 
 export interface NormalizeResult {
@@ -7,8 +7,6 @@ export interface NormalizeResult {
   priority:          IntakePriority
   suggestedTask:     { title: string; description: string; priority: IntakePriority } | null
 }
-
-const client = new Anthropic()
 
 const SYSTEM_PROMPT = `Eres un asistente de recepción para clínicas estéticas en Lima, Perú.
 Analiza el mensaje o contacto entrante y extrae información estructurada.
@@ -37,20 +35,24 @@ suggestedTask: créala solo si hay una acción concreta que el staff debe tomar
 Responde siempre en español`
 
 export async function normalizeIntake(rawContent: string): Promise<NormalizeResult> {
-  const message = await client.messages.create({
-    model:      'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    system:     SYSTEM_PROMPT,
-    messages:   [{ role: 'user', content: rawContent }],
-  })
-
-  const text = message.content
-    .filter((b) => b.type === 'text')
-    .map((b) => (b as { type: 'text'; text: string }).text)
-    .join('')
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) {
+    return {
+      normalizedSummary: rawContent.slice(0, 200),
+      detectedIntent:    'general',
+      priority:          'medium',
+      suggestedTask:     null,
+    }
+  }
 
   try {
-    const parsed = JSON.parse(text) as NormalizeResult
+    const genAI  = new GoogleGenerativeAI(apiKey)
+    const model  = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL_NAME ?? 'gemini-2.5-flash' })
+    const result = await model.generateContent(`${SYSTEM_PROMPT}\n\nMensaje a analizar:\n${rawContent}`)
+    const text   = result.response.text().trim()
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    const parsed    = JSON.parse(jsonMatch?.[0] ?? text) as NormalizeResult
     return {
       normalizedSummary: parsed.normalizedSummary ?? rawContent.slice(0, 200),
       detectedIntent:    parsed.detectedIntent    ?? 'general',

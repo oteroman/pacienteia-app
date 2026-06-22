@@ -14,7 +14,7 @@ const PRIORITY_LABEL: Record<CopilotTaskPriority, string> = {
 const PRIORITY_COLOR: Record<CopilotTaskPriority, string> = {
   high:   'bg-red-100 text-red-700',
   medium: 'bg-amber-100 text-amber-700',
-  low:    'bg-gray-100 text-gray-600',
+  low:    'bg-[#F3F6F9] text-slate',
 }
 
 export default async function TaskDetailPage({
@@ -57,7 +57,7 @@ export default async function TaskDetailPage({
     <div className="max-w-2xl mx-auto space-y-6">
 
       {/* Back */}
-      <Link href="/copilot" className="text-sm text-gray-400 hover:text-gray-600">
+      <Link href="/copilot" className="text-sm text-slate hover:text-slate">
         ← Volver al Copiloto
       </Link>
 
@@ -71,25 +71,25 @@ export default async function TaskDetailPage({
                 {PRIORITY_LABEL[task.priority as CopilotTaskPriority]}
               </span>
               {isDone && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-lima-100 text-lima-700">
                   Completada
                 </span>
               )}
               {isDismissed && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F3F6F9] text-slate">
                   Ignorada
                 </span>
               )}
             </div>
-            <h1 className="text-xl font-bold text-gray-900">{task.title}</h1>
+            <h1 className="text-xl font-bold text-ink">{task.title}</h1>
           </div>
         </div>
 
         {/* Description */}
         {task.description && (
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Detalle</p>
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{task.description}</p>
+            <p className="text-xs font-semibold text-slate uppercase tracking-wide mb-1">Detalle</p>
+            <p className="text-sm text-slate leading-relaxed whitespace-pre-wrap">{task.description}</p>
           </div>
         )}
 
@@ -97,13 +97,13 @@ export default async function TaskDetailPage({
         <div className="grid grid-cols-2 gap-4 pt-2 border-t">
           {task.patients?.full_name && (
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Paciente</p>
-              <p className="text-sm text-gray-700">{task.patients.full_name}</p>
+              <p className="text-xs font-semibold text-slate uppercase tracking-wide mb-0.5">Paciente</p>
+              <p className="text-sm text-slate">{task.patients.full_name}</p>
             </div>
           )}
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Creada</p>
-            <p className="text-sm text-gray-700">{createdAt}</p>
+            <p className="text-xs font-semibold text-slate uppercase tracking-wide mb-0.5">Creada</p>
+            <p className="text-sm text-slate">{createdAt}</p>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ export default async function TaskDetailPage({
             <form action={dismissWithId}>
               <button
                 type="submit"
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate bg-[#F3F6F9] hover:bg-fog transition-colors"
               >
                 Ignorar
               </button>

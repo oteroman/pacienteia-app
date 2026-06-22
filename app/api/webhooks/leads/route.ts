@@ -76,11 +76,15 @@ export async function POST(req: NextRequest) {
     .limit(1)
     .single()
 
+  if (!branch) {
+    return NextResponse.json({ error: 'branch_not_configured' }, { status: 422 })
+  }
+
   const channel: IntakeChannel = CHANNEL_MAP[source ?? ''] ?? 'whatsapp'
 
   const intakeId = await processIntake({
     organizationId: org.id as string,
-    branchId:       branch?.id ?? org.id,
+    branchId:       branch.id,
     channel,
     contactPhone:   phone   || undefined,
     contactName:    name    || undefined,

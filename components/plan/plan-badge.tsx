@@ -1,10 +1,10 @@
 import type { Plan } from '@/lib/plans/config'
 
 const PLAN_STYLES: Record<Plan, { label: string; className: string }> = {
-  trial:   { label: 'Trial',   className: 'bg-gray-100 text-gray-600 border-gray-200' },
-  basic:   { label: 'Básico',  className: 'bg-gray-100 text-gray-700 border-gray-200' },
+  trial:   { label: 'Trial',   className: 'bg-[#F3F6F9] text-slate border-fog' },
+  basic:   { label: 'Básico',  className: 'bg-[#F3F6F9] text-slate border-fog' },
   pro:     { label: 'Pro',     className: 'bg-brand-50 text-brand-700 border-brand-200' },
-  premium: { label: 'Premium', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  premium: { label: 'Premium', className: 'bg-ai-50 text-ai-600 border-ai-200' },
 }
 
 interface PlanBadgeProps {

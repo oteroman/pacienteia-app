@@ -21,12 +21,12 @@ interface PlanAccessNoticeProps {
 export function PlanAccessNotice({ feature, currentPlan }: PlanAccessNoticeProps) {
   const label = FEATURE_LABELS[feature] ?? feature
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-8 text-center space-y-3">
+    <div className="rounded-2xl border border-fog bg-mist p-8 text-center space-y-3">
       <p className="text-3xl">🔒</p>
-      <p className="text-sm font-semibold text-gray-800">
+      <p className="text-sm font-semibold text-ink">
         {label} no está incluido en el plan {currentPlan}
       </p>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-slate">
         Actualiza tu plan para activar esta funcionalidad y empezar a usarla de inmediato.
       </p>
       <Link

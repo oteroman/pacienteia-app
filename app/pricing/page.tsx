@@ -35,7 +35,7 @@ const PLAN_META = {
   basic: {
     tagline: 'Organiza y protege tu agenda',
     pitch: 'Para la cosmetóloga o consultorio que quiere dejar de perder citas por olvidos y cuidar su reputación en Google desde el día 1.',
-    color: 'border-gray-200',
+    color: 'border-fog',
     ctaClass: 'bg-gray-900 hover:bg-gray-700 text-white',
     popular: false,
   },
@@ -71,12 +71,12 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
 
       {/* Nav strip */}
-      <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+      <div className="border-b border-fog px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <Link href="/" className="text-brand-700 font-bold text-lg tracking-tight">
           Paciente IA
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900">
+          <Link href="/login" className="text-sm text-slate hover:text-ink">
             Iniciar sesión
           </Link>
           <Link
@@ -95,17 +95,17 @@ export default function PricingPage() {
           <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-xs font-medium px-3 py-1.5 rounded-full border border-brand-100">
             Para clínicas estéticas en Lima
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 leading-tight">
+          <h1 className="text-4xl sm:text-5xl font-bold text-ink leading-tight">
             Tu clínica cita, reactiva<br className="hidden sm:block" /> y cobra sola
           </h1>
-          <p className="text-lg text-gray-500 max-w-xl mx-auto">
+          <p className="text-lg text-slate max-w-xl mx-auto">
             Automatiza confirmaciones, recupera pacientes dormidos y mide tu ROI real.
             Sin contratar más personal.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-slate pt-2">
             {['14 días gratis', 'Sin tarjeta de crédito', 'Cancela cuando quieras'].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
-                <span className="text-green-500 font-bold">✓</span> {t}
+                <span className="text-lima-500 font-bold">✓</span> {t}
               </span>
             ))}
           </div>
@@ -121,11 +121,11 @@ export default function PricingPage() {
             return (
               <div
                 key={key}
-                className={`relative rounded-2xl border bg-white p-6 flex flex-col gap-5 ${meta.color} ${meta.popular ? 'shadow-xl' : 'shadow-sm'}`}
+                className={`relative rounded-2xl border bg-white p-6 flex flex-col gap-5 ${meta.color} ${meta.popular ? 'shadow-xl' : 'shadow-xs'}`}
               >
                 {meta.popular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                    <span className="bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                    <span className="bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-xs">
                       ★ Más popular
                     </span>
                   </div>
@@ -133,21 +133,21 @@ export default function PricingPage() {
 
                 {/* Header */}
                 <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">
+                  <p className="text-xs font-semibold text-slate uppercase tracking-widest mb-1">
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-gray-900">
+                    <span className="text-3xl font-bold text-ink">
                       S/{plan.price_pen.toLocaleString('es-PE')}
                     </span>
-                    <span className="text-sm text-gray-400">/mes</span>
+                    <span className="text-sm text-slate">/mes</span>
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-gray-800">{meta.tagline}</p>
-                  <p className="mt-1 text-xs text-gray-500 leading-relaxed">{meta.pitch}</p>
+                  <p className="mt-2 text-sm font-semibold text-ink">{meta.tagline}</p>
+                  <p className="mt-1 text-xs text-slate leading-relaxed">{meta.pitch}</p>
                 </div>
 
                 {/* Limits */}
-                <div className="rounded-xl bg-gray-50 p-3 space-y-1.5 text-xs text-gray-600">
+                <div className="rounded-xl bg-mist p-3 space-y-1.5 text-xs text-slate">
                   <div className="flex justify-between">
                     <span>Usuarios</span>
                     <span className="font-medium">{formatLimit(plan.users)}</span>
@@ -173,9 +173,9 @@ export default function PricingPage() {
                     return (
                       <li
                         key={feature}
-                        className={`flex items-start gap-2 text-xs ${included ? 'text-gray-700' : 'text-gray-300'}`}
+                        className={`flex items-start gap-2 text-xs ${included ? 'text-slate' : 'text-fog'}`}
                       >
-                        <span className={`mt-0.5 shrink-0 font-bold ${included ? 'text-green-500' : 'text-gray-200'}`}>
+                        <span className={`mt-0.5 shrink-0 font-bold ${included ? 'text-lima-500' : 'text-fog'}`}>
                           {included ? '✓' : '✗'}
                         </span>
                         {FEATURE_LABELS[feature]}
@@ -197,8 +197,8 @@ export default function PricingPage() {
         </div>
 
         {/* ── PERFIL POR PLAN ── */}
-        <div className="rounded-2xl border border-gray-100 bg-gray-50 p-8">
-          <h2 className="text-center text-xl font-bold text-gray-900 mb-8">
+        <div className="rounded-2xl border border-fog bg-mist p-8">
+          <h2 className="text-center text-xl font-bold text-ink mb-8">
             ¿Para quién es cada plan?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
@@ -213,7 +213,7 @@ export default function PricingPage() {
                 icon: '🏥',
                 plan: 'Pro',
                 profile: 'Clínica con 2-3 personas y flujo activo de leads por WhatsApp',
-                win: '10 pacientes reactivados = S/3,500 extra al mes vs S/890 del plan',
+                win: '10 pacientes reactivados = S/3,500 extra al mes vs S/249 del plan',
               },
               {
                 icon: '🏢',
@@ -222,11 +222,11 @@ export default function PricingPage() {
                 win: 'ROI dashboard en vivo: cada mes ves exactamente cuánto generaste',
               },
             ].map(({ icon, plan, profile, win }) => (
-              <div key={plan} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm space-y-2">
+              <div key={plan} className="bg-white rounded-xl p-5 border border-fog shadow-xs space-y-2">
                 <div className="text-2xl">{icon}</div>
-                <p className="font-semibold text-gray-900">{plan}</p>
-                <p className="text-gray-500 text-xs">{profile}</p>
-                <p className="text-green-700 text-xs font-medium border-t border-gray-100 pt-2">
+                <p className="font-semibold text-ink">{plan}</p>
+                <p className="text-slate text-xs">{profile}</p>
+                <p className="text-lima-700 text-xs font-medium border-t border-fog pt-2">
                   {win}
                 </p>
               </div>
@@ -235,11 +235,11 @@ export default function PricingPage() {
         </div>
 
         {/* ── GARANTÍA ── */}
-        <div className="text-center space-y-3 py-8 border-y border-gray-100">
-          <p className="text-2xl font-bold text-gray-900">
+        <div className="text-center space-y-3 py-8 border-y border-fog">
+          <p className="text-2xl font-bold text-ink">
             Si no recuperas el costo en el primer mes, te devolvemos tu dinero.
           </p>
-          <p className="text-gray-500 text-sm max-w-lg mx-auto">
+          <p className="text-slate text-sm max-w-lg mx-auto">
             Estamos tan seguros del valor de PacienteIA para clínicas en Lima que ofrecemos
             garantía completa los primeros 30 días.
           </p>
@@ -253,7 +253,7 @@ export default function PricingPage() {
 
         {/* ── FAQ ── */}
         <div className="max-w-2xl mx-auto space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-6">Preguntas frecuentes</h2>
+          <h2 className="text-xl font-bold text-ink text-center mb-6">Preguntas frecuentes</h2>
           {[
             {
               q: '¿Puedo cambiar de plan en cualquier momento?',
@@ -272,12 +272,12 @@ export default function PricingPage() {
               a: 'No. El dashboard está diseñado para que cualquier persona de la clínica lo maneje. El onboarding inicial lo hacemos juntos en 30 minutos.',
             },
           ].map(({ q, a }) => (
-            <details key={q} className="group rounded-xl border border-gray-100 bg-white">
-              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-medium text-gray-900 list-none">
+            <details key={q} className="group rounded-xl border border-fog bg-white">
+              <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-medium text-ink list-none">
                 {q}
-                <span className="ml-4 text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                <span className="ml-4 text-slate group-open:rotate-180 transition-transform">▼</span>
               </summary>
-              <p className="px-5 pb-4 text-sm text-gray-500 leading-relaxed">{a}</p>
+              <p className="px-5 pb-4 text-sm text-slate leading-relaxed">{a}</p>
             </details>
           ))}
         </div>
@@ -285,7 +285,7 @@ export default function PricingPage() {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-gray-100 py-8 text-center text-xs text-gray-400">
+      <div className="border-t border-fog py-8 text-center text-xs text-slate">
         <p>PacienteIA · Para clínicas estéticas en Lima · contacto@pacienteia.com</p>
       </div>
     </div>

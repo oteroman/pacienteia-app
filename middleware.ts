@@ -19,10 +19,28 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — must run before any redirect to avoid auth loops
-  const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
+
+  // Public API — authenticated via X-API-Key, not session
+  if (pathname.startsWith('/api/v1/')) return response
+
+  const isPublicPath =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/invite/')
+
+  // For public/auth paths use getSession() (cookie-only, no network round-trip).
+  // For protected paths use getUser() (validates with Supabase server).
+  let user: { app_metadata?: Record<string, unknown> } | null = null
+  if (isPublicPath || pathname === '/') {
+    const { data: { session } } = await supabase.auth.getSession()
+    user = session?.user ?? null
+  } else {
+    const { data: { user: u } } = await supabase.auth.getUser()
+    user = u
+  }
 
   // ── Platform admin routing ─────────────────────────────────────────────
   // platform_role is in JWT app_metadata — no DB call needed
@@ -34,43 +52,58 @@ export async function middleware(request: NextRequest) {
     const onAuth       = pathname.startsWith('/login') || pathname.startsWith('/auth/')
     const onAnalytics  = pathname.startsWith('/analytics')
     const onOnboarding = pathname.startsWith('/onboarding')
-    if (!onPlatform && !onAuth && !onAnalytics && !onOnboarding) {
+    const onApi        = pathname.startsWith('/api/')
+    if (!onPlatform && !onAuth && !onAnalytics && !onOnboarding && !onApi) {
       return NextResponse.redirect(new URL('/platform', request.url))
     }
   }
 
   // ── Auth routing ───────────────────────────────────────────────────────
-  const isPublicPath =
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/auth/') ||
-    pathname.startsWith('/onboarding') ||   // registration + onboarding wizard
-    pathname.startsWith('/invite/')         // invitation accept link
+  // Unauthenticated users hitting /onboarding go to /signup first
+  if (!user && pathname.startsWith('/onboarding')) {
+    return NextResponse.redirect(new URL('/signup', request.url))
+  }
+
+  // Root / — authenticated users go to dashboard, unauthenticated go to login
+  if (pathname === '/') {
+    if (user && !isPlatformAdmin) return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (user && isPlatformAdmin) return NextResponse.redirect(new URL('/platform', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
 
   const isProtectedPath =
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/patients') ||
     pathname.startsWith('/appointments') ||
+    pathname.startsWith('/calendar') ||
     pathname.startsWith('/leads') ||
+    pathname.startsWith('/inbox') ||
+    pathname.startsWith('/copilot') ||
+    pathname.startsWith('/backfill') ||
+    pathname.startsWith('/activity') ||
+    pathname.startsWith('/waiting-room') ||
+    pathname.startsWith('/opportunities') ||
+    pathname.startsWith('/rebooking') ||
     pathname.startsWith('/billing') ||
     pathname.startsWith('/settings') ||
     pathname.startsWith('/analytics') ||
     pathname.startsWith('/blocked') ||
     pathname.startsWith('/platform') ||
-    pathname.startsWith('/org-selector') ||
-    pathname === '/'
+    pathname.startsWith('/org-selector')
 
   // Unauthenticated → login
   if (!user && isProtectedPath) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Authenticated platform admin → /platform (not /dashboard)
-  if (user && isPlatformAdmin && pathname.startsWith('/login')) {
+  // Authenticated users don't need login or signup
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
+
+  if (user && isPlatformAdmin && isAuthPage) {
     return NextResponse.redirect(new URL('/platform', request.url))
   }
 
-  // Authenticated clinic user → /dashboard
-  if (user && !isPlatformAdmin && pathname.startsWith('/login')) {
+  if (user && !isPlatformAdmin && isAuthPage) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

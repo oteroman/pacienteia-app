@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendWhatsAppText }  from '@/lib/whatsapp/send'
 
 // ── Types ─────────────────────────────────────────────────────
 export type SlotReason  = 'cancellation' | 'no_show' | 'reschedule' | 'manual' | 'gap_detected'
@@ -25,6 +26,7 @@ export interface SlotOpening {
   status:            SlotStatus
   candidates:        Candidate[]
   candidateCount:    number
+  notifiedPhones:    string[]
   selectedPatientId: string | null
   newAppointmentId:  string | null
   fillAttempts:      number
@@ -36,13 +38,13 @@ export interface SlotOpening {
 
 export interface BackfillDashboard {
   stats: {
-    open:       number
+    open:        number
     filledToday: number
-    fillRate:   number   // 0-100 over last 30 days
-    totalSlots: number
+    fillRate:    number
+    totalSlots:  number
   }
-  openSlots:    SlotOpening[]
-  filledToday:  SlotOpening[]
+  openSlots:   SlotOpening[]
+  filledToday: SlotOpening[]
 }
 
 // ── Message template ──────────────────────────────────────────
@@ -64,7 +66,7 @@ function buildWaMessage(
   return (
     `Hola ${patientName} 👋 Tenemos disponibilidad de última hora para *${treatmentType}* ` +
     `el *${formatted}*.\n\n` +
-    `¿Te gustaría tomar este espacio? Responde *SÍ* para confirmarte o escríbenos si tienes alguna duda 😊`
+    `¿Te gustaría tomar este espacio? Responde *SÍ* para confirmarte 😊`
   )
 }
 
@@ -79,14 +81,13 @@ async function findCandidates(
   limit = 5,
 ): Promise<Candidate[]> {
   const now           = new Date()
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString()
+  const ninetyDaysAgo = new Date(now.getTime() - 90  * 24 * 60 * 60 * 1000).toISOString()
   const oneYearAgo    = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString()
   const isUrgent      = new Date(slotStart).getTime() - now.getTime() < 48 * 60 * 60 * 1000
 
-  // Accumulator: patientId → Candidate (partial)
   const map = new Map<string, Omit<Candidate, 'waMessage'>>()
 
-  // ── Source 1: past appointments with same treatment ────────
+  // Source 1: patients who have had the same treatment before
   const { data: histRows } = await sb
     .from('appointments')
     .select('patient_id, scheduled_at, patients ( id, full_name, phone, on_waitlist )')
@@ -94,7 +95,6 @@ async function findCandidates(
     .eq('treatment_type', treatmentType)
     .in('status', ['completed', 'confirmed'])
     .gte('scheduled_at', oneYearAgo)
-    .is('deleted_at', null)
     .order('scheduled_at', { ascending: false })
     .limit(60)
 
@@ -102,74 +102,86 @@ async function findCandidates(
     const p = row.patients
     if (!p?.phone) continue
     const id = p.id as string
-    if (map.has(id)) continue            // already added; score bonus via source 2/3
+    if (map.has(id)) continue
 
-    const isRecent   = new Date(row.scheduled_at) >= new Date(ninetyDaysAgo)
+    const isRecent = new Date(row.scheduled_at) >= new Date(ninetyDaysAgo)
     const reasons: string[] = ['Mismo tratamiento previo']
     let score = 30
-    if (isRecent)   { score += 15; reasons.push('Visita reciente (<90 días)') }
+    if (isRecent)      { score += 15; reasons.push('Visita reciente (<90d)') }
     if (p.on_waitlist) { score += 10; reasons.push('En lista de espera') }
-    if (isUrgent)   { score += 5;  reasons.push('Slot urgente') }
+    if (isUrgent)      { score += 5;  reasons.push('Slot urgente') }
 
-    map.set(id, { patientId: id, patientName: p.full_name, phone: p.phone, score, scoreReasons: reasons, isWaitlisted: !!p.on_waitlist })
+    map.set(id, {
+      patientId: id, patientName: p.full_name, phone: p.phone,
+      score, scoreReasons: reasons, isWaitlisted: !!p.on_waitlist,
+    })
   }
 
-  // ── Source 2: pending rebooking for same treatment ─────────
-  const { data: reRows } = await sb
-    .from('appointment_rebooking')
-    .select('patient_id, patients ( id, full_name, phone, on_waitlist ), appointments ( treatment_type )')
-    .eq('organization_id', organizationId)
-    .eq('outcome', 'pending')
-    .not('patient_id', 'is', null)
-    .limit(30)
-
-  for (const row of (reRows ?? [])) {
-    if (row.appointments?.treatment_type !== treatmentType) continue
-    const p = row.patients
-    if (!p?.phone) continue
-    const id = p.id as string
-
-    if (map.has(id)) {
-      const c = map.get(id)!
-      c.score += 20
-      c.scoreReasons.push('Quiere reagendar este tratamiento')
-    } else {
-      const reasons = ['Quiere reagendar este tratamiento']
-      let score = 20
-      if (p.on_waitlist) { score += 10; reasons.push('En lista de espera') }
-      if (isUrgent)      { score += 5;  reasons.push('Slot urgente') }
-      map.set(id, { patientId: id, patientName: p.full_name, phone: p.phone, score, scoreReasons: reasons, isWaitlisted: !!p.on_waitlist })
-    }
-  }
-
-  // ── Source 3: open appointment_request intakes ─────────────
+  // Source 2: open intake/lead requests for appointment
   const { data: inRows } = await sb
     .from('intakes')
-    .select('patient_id')
+    .select('patient_id, patients ( id, full_name, phone, on_waitlist )')
     .eq('organization_id', organizationId)
     .eq('detected_intent', 'appointment_request')
     .in('status', ['new', 'in_progress'])
     .not('patient_id', 'is', null)
     .limit(30)
 
-  const intakePatientIds = new Set<string>(
-    (inRows ?? []).map((r: { patient_id: string }) => r.patient_id).filter(Boolean),
-  )
-
-  for (const [id, c] of map.entries()) {
-    if (intakePatientIds.has(id)) {
+  for (const row of (inRows ?? [])) {
+    const p = row.patients
+    if (!p?.phone) continue
+    const id = p.id as string
+    if (map.has(id)) {
+      const c = map.get(id)!
       c.score += 15
       c.scoreReasons.push('Solicitud de cita abierta')
+    } else {
+      const reasons = ['Solicitud de cita abierta']
+      let score = 25
+      if (p.on_waitlist) { score += 10; reasons.push('En lista de espera') }
+      if (isUrgent)      { score += 5;  reasons.push('Slot urgente') }
+      map.set(id, {
+        patientId: id, patientName: p.full_name, phone: p.phone,
+        score, scoreReasons: reasons, isWaitlisted: !!p.on_waitlist,
+      })
     }
   }
 
-  // ── Rank, cap at 100, return top N ─────────────────────────
+  // Source 3: active reactivation campaign patients (already warmed up)
+  const { data: reacRows } = await sb
+    .from('reactivation_campaigns')
+    .select('patient_id, patients ( id, full_name, phone, on_waitlist )')
+    .eq('organization_id', organizationId)
+    .in('status', ['sent', 'responded'])
+    .not('patient_id', 'is', null)
+    .limit(30)
+
+  for (const row of (reacRows ?? [])) {
+    const p = row.patients
+    if (!p?.phone) continue
+    const id = p.id as string
+    if (map.has(id)) {
+      const c = map.get(id)!
+      c.score += 20
+      c.scoreReasons.push('En campaña de reactivación')
+    } else {
+      const reasons = ['En campaña de reactivación']
+      let score = 35
+      if (p.on_waitlist) { score += 10; reasons.push('En lista de espera') }
+      if (isUrgent)      { score += 5;  reasons.push('Slot urgente') }
+      map.set(id, {
+        patientId: id, patientName: p.full_name, phone: p.phone,
+        score, scoreReasons: reasons, isWaitlisted: !!p.on_waitlist,
+      })
+    }
+  }
+
   return Array.from(map.values())
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((c) => ({
       ...c,
-      score:    Math.min(c.score, 100),
+      score:     Math.min(c.score, 100),
       waMessage: buildWaMessage(c.patientName, treatmentType, slotStart),
     }))
 }
@@ -191,6 +203,7 @@ export async function triggerBackfill(input: TriggerBackfillInput): Promise<stri
 
   const candidates = await findCandidates(sb, input.organizationId, input.treatmentType, input.slotStart)
 
+  // Create copilot task for top candidate
   let staffTaskId: string | null = null
   if (candidates.length > 0 && input.branchId) {
     const top = candidates[0]
@@ -198,28 +211,50 @@ export async function triggerBackfill(input: TriggerBackfillInput): Promise<stri
       organization_id: input.organizationId,
       branch_id:       input.branchId,
       patient_id:      top.patientId,
-      title:           `Llenar slot: contactar a ${top.patientName} — ${input.treatmentType}`,
-      description:     `Score ${top.score}/100. Tel: ${top.phone}. Razones: ${top.scoreReasons.join(', ')}.`,
+      title:           `Backfill: contactar ${top.patientName} — ${input.treatmentType}`,
+      description:     `Score ${top.score}/100. Tel: ${top.phone}. ${top.scoreReasons.join(', ')}.`,
       priority:        'medium',
     }).select('id').single()
     staffTaskId = task?.id ?? null
   }
 
+  // Create the slot_openings record FIRST — WhatsApp replies reference it via slot_id
   const { data: record, error } = await sb.from('slot_openings').insert({
-    organization_id: input.organizationId,
-    appointment_id:  input.appointmentId,
-    treatment_type:  input.treatmentType,
-    slot_start:      input.slotStart,
-    slot_end:        input.slotEnd ?? null,
-    reason_opened:   input.reasonOpened,
-    candidates:      candidates,
-    candidate_count: candidates.length,
-    staff_task_id:   staffTaskId,
+    organization_id:  input.organizationId,
+    branch_id:        input.branchId ?? null,
+    appointment_id:   input.appointmentId,
+    treatment_type:   input.treatmentType,
+    slot_start:       input.slotStart,
+    slot_end:         input.slotEnd ?? null,
+    reason_opened:    input.reasonOpened,
+    candidates,
+    candidate_count:  candidates.length,
+    notified_phones:  [],
+    staff_task_id:    staffTaskId,
   }).select('id').single()
 
   if (error) {
     console.error('[triggerBackfill]', error.message)
     return null
+  }
+
+  // Now send WhatsApp — record exists so replies can be tracked
+  const notifiedPhones: string[] = []
+  if (input.branchId) {
+    const toNotify = candidates.slice(0, 3)
+    await Promise.allSettled(
+      toNotify.map(async (c) => {
+        try {
+          await sendWhatsAppText({ branchId: input.branchId!, to: c.phone, body: c.waMessage })
+          notifiedPhones.push(c.phone)
+        } catch (err) {
+          console.error('[backfill] sendWhatsApp failed for', c.phone, err)
+        }
+      })
+    )
+    if (notifiedPhones.length > 0) {
+      await sb.from('slot_openings').update({ notified_phones: notifiedPhones }).eq('id', record.id)
+    }
   }
 
   return record?.id as string | null
@@ -228,38 +263,27 @@ export async function triggerBackfill(input: TriggerBackfillInput): Promise<stri
 // ── Dashboard query ───────────────────────────────────────────
 export async function fetchBackfillDashboard(organizationId: string): Promise<BackfillDashboard> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb  = createAdminClient() as any
-  const now = new Date()
+  const sb          = createAdminClient() as any
+  const now         = new Date()
   const todayStart  = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const thirtyAgo   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const selectSlot = `
-    id, clinic_id, appointment_id, treatment_type, slot_start, slot_end,
-    reason_opened, status, candidates, candidate_count,
+  const sel = `id, organization_id, appointment_id, treatment_type, slot_start, slot_end,
+    reason_opened, status, candidates, candidate_count, notified_phones,
     selected_patient_id, new_appointment_id, fill_attempts,
-    staff_task_id, filled_at, notes, created_at
-  `
+    staff_task_id, filled_at, notes, created_at`
 
   const [openRes, filledRes, rateRes] = await Promise.all([
-    sb.from('slot_openings')
-      .select(selectSlot)
-      .eq('organization_id', organizationId)
-      .eq('status', 'open')
-      .order('slot_start', { ascending: true })
-      .limit(30),
+    sb.from('slot_openings').select(sel)
+      .eq('organization_id', organizationId).eq('status', 'open')
+      .order('slot_start', { ascending: true }).limit(30),
 
-    sb.from('slot_openings')
-      .select(selectSlot)
-      .eq('organization_id', organizationId)
-      .eq('status', 'filled')
-      .gte('filled_at', todayStart)
-      .order('filled_at', { ascending: false })
-      .limit(20),
+    sb.from('slot_openings').select(sel)
+      .eq('organization_id', organizationId).eq('status', 'filled')
+      .gte('filled_at', todayStart).order('filled_at', { ascending: false }).limit(20),
 
-    sb.from('slot_openings')
-      .select('status')
-      .eq('organization_id', organizationId)
-      .gte('created_at', thirtyDaysAgo),
+    sb.from('slot_openings').select('status')
+      .eq('organization_id', organizationId).gte('created_at', thirtyAgo),
   ])
 
   const toSlot = (r: Record<string, unknown>): SlotOpening => ({
@@ -273,6 +297,7 @@ export async function fetchBackfillDashboard(organizationId: string): Promise<Ba
     status:            r.status as SlotStatus,
     candidates:        (r.candidates as Candidate[]) ?? [],
     candidateCount:    r.candidate_count as number,
+    notifiedPhones:    (r.notified_phones as string[]) ?? [],
     selectedPatientId: r.selected_patient_id as string | null,
     newAppointmentId:  r.new_appointment_id as string | null,
     fillAttempts:      r.fill_attempts as number,
@@ -283,39 +308,30 @@ export async function fetchBackfillDashboard(organizationId: string): Promise<Ba
   })
 
   const rateRows  = (rateRes.data ?? []) as { status: string }[]
-  const totalSlots = rateRows.length
+  const totalSlots  = rateRows.length
   const filledSlots = rateRows.filter((r) => r.status === 'filled').length
-  const fillRate  = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0
-
-  const openSlots   = (openRes.data   ?? []).map(toSlot)
-  const filledToday = (filledRes.data ?? []).map(toSlot)
 
   return {
     stats: {
-      open:        openSlots.length,
-      filledToday: filledToday.length,
-      fillRate,
+      open:        (openRes.data ?? []).length,
+      filledToday: (filledRes.data ?? []).length,
+      fillRate:    totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0,
       totalSlots,
     },
-    openSlots,
-    filledToday,
+    openSlots:   (openRes.data   ?? []).map(toSlot),
+    filledToday: (filledRes.data ?? []).map(toSlot),
   }
 }
 
 export async function fillSlot(
-  slotId:           string,
-  organizationId:   string,
+  slotId:            string,
+  organizationId:    string,
   selectedPatientId: string,
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (createAdminClient() as any)
     .from('slot_openings')
-    .update({
-      status:              'filled',
-      selected_patient_id: selectedPatientId,
-      filled_at:           new Date().toISOString(),
-      fill_attempts:       1,
-    })
+    .update({ status: 'filled', selected_patient_id: selectedPatientId, filled_at: new Date().toISOString(), fill_attempts: 1 })
     .eq('id', slotId)
     .eq('organization_id', organizationId)
 }

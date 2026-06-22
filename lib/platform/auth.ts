@@ -5,12 +5,29 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const IMPERSONATE_COOKIE = 'pa_impersonate'
 
-export type PlatformRole = 'superadmin' | 'support'
+export type PlatformRole = 'superadmin' | 'support' | 'sales'
 
 export interface PlatformUser {
   id: string
   email: string
   platform_role: PlatformRole
+}
+
+/** Maps roles to human-readable labels */
+export const PLATFORM_ROLE_LABEL: Record<PlatformRole, string> = {
+  superadmin: 'Super Admin',
+  support:    'Soporte',
+  sales:      'Comercial',
+}
+
+/** Returns true if the user has at least one of the given roles. */
+export function hasRole(user: PlatformUser, roles: PlatformRole[]): boolean {
+  return roles.includes(user.platform_role)
+}
+
+/** Redirects to /platform if the user lacks the required role(s). */
+export function requireRole(user: PlatformUser, roles: PlatformRole[]): void {
+  if (!hasRole(user, roles)) redirect('/platform')
 }
 
 /** Returns the platform user if the current session has a platform_role, otherwise null. */
