@@ -51,8 +51,9 @@ export async function releaseExpiredDepositsForOrg(organizationId: string): Prom
   let skipped  = 0
 
   for (const row of ((rows ?? []) as ExpiredRow[])) {
-    // Solo actúa donde el dueño dejó el automatismo activo para esa sucursal.
-    if (row.branch_id && !(await isAutomationEnabled(organizationId, row.branch_id, 'deposit_expiry'))) {
+    // Opt-in: solo actúa si el dueño ACTIVÓ explícitamente el automatismo para
+    // esa sucursal (default OFF — no cancela citas sin habilitación expresa).
+    if (row.branch_id && !(await isAutomationEnabled(organizationId, row.branch_id, 'deposit_expiry', false))) {
       skipped++
       continue
     }

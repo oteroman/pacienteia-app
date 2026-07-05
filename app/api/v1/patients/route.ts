@@ -27,7 +27,12 @@ export async function GET(req: NextRequest) {
     .limit(limit)
 
   if (q) {
-    query = query.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`)
+    // Strip PostgREST filter metacharacters (comma/parens/backslash) to prevent
+    // filter injection via ?q=. Patient search only needs letters/digits/spaces.
+    const safe = q.replace(/[,()\\]/g, ' ').trim()
+    if (safe) {
+      query = query.or(`full_name.ilike.%${safe}%,phone.ilike.%${safe}%`)
+    }
   }
 
   const { data, error } = await query

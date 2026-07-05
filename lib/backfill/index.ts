@@ -409,8 +409,18 @@ async function recordRecoveredRevenue(
 ): Promise<void> {
   const today = new Date().toISOString().split('T')[0]
 
-  // Read-modify-write (not upsert): metrics_daily holds many counters on the
-  // same (branch_id, date) row — a full upsert would clobber the others.
+  // Atomic increment via RPC — evita la race del read-modify-write cuando se
+  // llenan varios slots a la vez. Solo toca estimated_revenue_recovered, nunca
+  // pisa los otros contadores de la fila (branch_id, date).
+  const { error: rpcErr } = await sb.rpc('increment_recovered_revenue', {
+    p_org:    organizationId,
+    p_branch: branchId,
+    p_date:   today,
+    p_amount: amount,
+  })
+  if (!rpcErr) return
+
+  // Fallback (p. ej. RPC aún no desplegada): read-modify-write.
   const { data: existing } = await sb
     .from('metrics_daily')
     .select('id, estimated_revenue_recovered')

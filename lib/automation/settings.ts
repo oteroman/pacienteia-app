@@ -30,6 +30,7 @@ export async function isAutomationEnabled(
   organizationId: string,
   branchId: string,
   key: AutomationKey,
+  defaultEnabled = true,
 ): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
@@ -41,5 +42,5 @@ export async function isAutomationEnabled(
     .eq('automation_key', key)
     .maybeSingle()
 
-  return data === null ? true : (data.is_enabled as boolean)
+  return data === null ? defaultEnabled : (data.is_enabled as boolean)
 }

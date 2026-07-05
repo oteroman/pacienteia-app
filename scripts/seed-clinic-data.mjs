@@ -269,7 +269,7 @@ async function run() {
   console.log('  basico@test.pacienteia.com   / Test1234!  (plan: basic)')
   console.log('  pro@test.pacienteia.com      / Test1234!  (plan: pro)')
   console.log('  premium@test.pacienteia.com  / Test1234!  (plan: premium)')
-  console.log('\nAdmin dashboard: /analytics/admin?key=pacienteia_admin_2026')
+  console.log('\nAnalytics dashboard: /analytics')
 }
 
 run().catch(console.error)

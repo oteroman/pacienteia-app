@@ -17,7 +17,7 @@ export default async function ConsentPage({ params }: PageProps) {
   const sb       = createAdminClient() as any
 
   const [{ data: patient }, { data: org }] = await Promise.all([
-    supabase
+    (supabase as any)
       .from('patients')
       .select('full_name, dni, phone, email')
       .eq('id', id)
