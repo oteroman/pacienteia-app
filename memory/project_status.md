@@ -13,7 +13,7 @@ Plataforma en producción (`https://app.pacienteia.com`, Vercel `illari-labs/pac
   2. `/org-selector` escribía cookie durante el render (Next 15 lo prohíbe) → 500 al vencer la cookie de contexto. Commit `26b8adb`.
   3. Auto-forward de 1 org/1 sucursal restaurado vía Route Handler `/org-selector/auto` + cookie de contexto extendida de 30 días a 1 año. Commit `145ffc0`.
   - **Modelo de deploy: CLI (`vercel --prod`) desde un worktree limpio de `main`**, no git-connected. Prod era `main`@`e3dc405`; ahora `main`@`145ffc0`.
-  - ⚠️ **DIVERGENCIA DE RAMAS:** `26b8adb` y `145ffc0` están en `main` (= prod) pero NO en `chore/consolidate-work-and-scrub-secrets` (donde vive recovery/no-show/SDLC). Si se despliega esa rama sin cherry-pickear estos 2 commits, se REGRESA el login. `main` local sin push — respaldar con `git push origin main`.
+  - ✅ **DIVERGENCIA RESUELTA (2026-07-05):** los 2 fixes de login se cherry-pickearon a `chore/consolidate-work-and-scrub-secrets` (`dd58dc3`, `8feac4c`); ambas ramas pusheadas a origin. Migración `deposit_expiry` aplicada a prod.
   - **Lección:** al rotar una key en Supabase, actualizar Vercel + redeploy o el deploy vivo queda con la credencial vieja.
 - **Contador de dinero recuperado encendido.** `fillSlot` ahora escribe `metrics_daily.estimated_revenue_recovered` (idempotente, precio: cita original → catálogo `services`). `lib/backfill/index.ts`.
 - **Widget "número héroe"** en el dashboard: "Recuperado por PacienteIA este mes". `app/(dashboard)/dashboard/page.tsx`.

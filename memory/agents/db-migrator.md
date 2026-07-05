@@ -11,7 +11,7 @@
 
 ## Historial
 
-### 2026-07-05 — Migración deposit_expiry (escrita, NO aplicada)
-- **Qué:** `supabase/migrations/20260705000001_deposit_expiry.sql` — `appointments.payment_requested_at timestamptz` + índice parcial `where payment_status='pending'`. Aditiva y segura (columna nullable, sin backfill destructivo).
-- **Resultado:** archivo listo. **Pendiente de aplicar a producción con confirmación del usuario** (patrón Node HTTPS).
-- **Próximo:** aplicar tras OK; luego desplegar el cron `/api/internal/deposit-expiry`.
+### 2026-07-05 — Migración deposit_expiry APLICADA ✓
+- **Qué:** `supabase/migrations/20260705000001_deposit_expiry.sql` — `appointments.payment_requested_at timestamptz` + índice parcial `where payment_status='pending'`. Aditiva y segura.
+- **Resultado:** APLICADA a prod vía Management API (HTTP 201; columna verificada en information_schema). No afecta el prod actual (main@145ffc0 no usa la columna todavía).
+- **Próximo:** al desplegar el no-show blindado, agendar el cron `/api/internal/deposit-expiry` (n8n o Vercel Cron).
