@@ -91,7 +91,7 @@ async function handleQrImagePayment(p: {
 
   await sb
     .from('appointments')
-    .update({ payment_status: 'pending' })
+    .update({ payment_status: 'pending', payment_requested_at: new Date().toISOString() })
     .eq('id', opts.appointmentId)
 }
 
@@ -139,9 +139,10 @@ async function handleNiubizPayment(p: {
   await sb
     .from('appointments')
     .update({
-      payment_status:   'pending',
-      payment_link:     result.url,
-      payment_order_id: result.purchaseNumber,
+      payment_status:       'pending',
+      payment_link:         result.url,
+      payment_order_id:     result.purchaseNumber,
+      payment_requested_at: new Date().toISOString(),
     })
     .eq('id', opts.appointmentId)
 

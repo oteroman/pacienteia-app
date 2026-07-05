@@ -3,9 +3,14 @@
 > Lee antes de empezar. Añade una entrada al tope del historial al terminar.
 
 ## Pendiente / próximo
-- Escribir historias de usuario + criterios de aceptación de **"No-show blindado"** (Idea Tier-1) cuando se dé luz verde: conectar depósito Yape existente (`lib/payments/`) con la cascada de backfill — si no paga la separación en X horas, liberar el cupo a recuperación.
+- (ninguno abierto — brief de "No-show blindado" entregado; espera decisiones de producto en `arquitecto-plan`)
 
 ## Historial
+
+### 2026-07-05 — Brief "No-show blindado"
+- **Qué:** Historia principal: *Como dueño quiero que un cupo sin separación pagada en 2h se libere y se ofrezca a recuperación, para no perder el ingreso.* Criterio: cita `payment_status='pending'` > 2h → liberar + backfill + cortesía. Conecta `lib/payments/` (depósito existente) con `triggerBackfill`.
+- **Regla de Hierro:** OK — mensaje de cortesía es operativo, sin consejo médico.
+- **Próximo:** decisiones de producto (cancelar cita sí/no, mensaje sí/no) en el plan.
 
 ### 2026-07-04 — Sesión de asesoría estratégica (mercado Perú)
 - **Qué:** Reencuadre clave — PacienteIA no tiene problema de features sino de **tangibilización del valor**. Ideas rankeadas, tangibles <30d:

@@ -7,6 +7,12 @@
 
 ## Historial
 
+### 2026-07-05 — Motor "No-show blindado"
+- **Qué:** `releaseExpiredDepositsForOrg()` — busca citas `payment_status='pending'` con separación vencida (>2h, `DEPOSIT_TTL_HOURS`) y status activo; libera (`expired` + `cancelled`), ofrece a recuperación (`triggerBackfill`) y envía cortesía. Respeta `isAutomationEnabled(...,'deposit_expiry')`. Idempotente. Cron en `app/api/internal/deposit-expiry/route.ts`.
+- **Archivos:** `lib/backfill/deposit-expiry.ts`, `app/api/internal/deposit-expiry/route.ts`, `lib/automation/settings.ts` (nueva key)
+- **Resultado:** `tsc` limpio. Sin commit; migración sin aplicar.
+- **Próximo:** aplicar migración + agendar cron (n8n o Vercel) cada 15-30 min.
+
 ### 2026-07-04 — Encender el contador de dinero recuperado
 - **Qué:** `fillSlot` ahora contabiliza el dinero recuperado en `metrics_daily.estimated_revenue_recovered` al llenar un hueco. Precio resuelto: cita original → catálogo `services` → 0 si no hay precio confiable. Idempotente (solo cuenta al transicionar a `filled`). Read-modify-write, no upsert (para no borrar otros contadores de la fila).
 - **Archivos:** `lib/backfill/index.ts` (`fillSlot`, `resolveRecoveredPrice`, `recordRecoveredRevenue`)

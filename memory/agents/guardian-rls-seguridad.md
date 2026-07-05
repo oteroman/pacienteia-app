@@ -7,4 +7,8 @@
 - Al revisar la futura tabla `slot_offers`: confirmar `ENABLE ROW LEVEL SECURITY` + políticas `is_org_member`, y que org A no vea ofertas de org B.
 
 ## Historial
-_(sin auditorías formales registradas por este agente aún)_
+
+### 2026-07-05 — Gate "No-show blindado" — LIMPIO
+- **Qué audité:** `lib/backfill/deposit-expiry.ts` + cron `deposit-expiry`.
+- **Hallazgos:** ninguno. `releaseExpiredDepositsForOrg` filtra `.eq('organization_id')` en select y update; `triggerBackfill` recibe org/branch explícitos; `isAutomationEnabled` filtra org+branch; cron con auth `CRON_SECRET`; sin secretos hardcodeados. Admin client apropiado (contexto cron).
+- **Próximo:** re-verificar RLS de `slot_offers` cuando exista.

@@ -12,6 +12,7 @@ export type AutomationKey =
   | 'smart_buffer'
   | 'roi_report'
   | 'reschedule_escalation'
+  | 'deposit_expiry'
 
 export const AUTOMATION_LABELS: Record<AutomationKey, { name: string; desc: string }> = {
   reminders_24h:           { name: 'Recordatorio 24h',        desc: 'WhatsApp automático 24h antes de cada cita' },
@@ -22,6 +23,7 @@ export const AUTOMATION_LABELS: Record<AutomationKey, { name: string; desc: stri
   smart_buffer:            { name: 'Smart Buffer',            desc: 'Aviso de retraso automático al siguiente paciente cuando el doctor se pasa' },
   roi_report:              { name: 'Reporte ROI semanal',     desc: 'Resumen semanal enviado por WhatsApp al dueño cada lunes' },
   reschedule_escalation:   { name: 'Escalación reagendamiento', desc: 'Tarea copilot si el paciente no elige slot de reagendamiento en 2h' },
+  deposit_expiry:          { name: 'No-show blindado',          desc: 'Libera el cupo y lo ofrece a recuperación si la separación no se paga en 2h' },
 }
 
 export async function isAutomationEnabled(
