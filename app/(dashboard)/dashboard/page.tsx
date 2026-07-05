@@ -44,6 +44,7 @@ export default async function DashboardPage() {
   const { organizationId, branchId } = ctx
 
   const today          = new Date().toISOString().split('T')[0]
+  const monthStart     = `${today.slice(0, 7)}-01`
   const twoHoursAgo    = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   const sevenDaysAgo   = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const sixtyDaysAgo   = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -51,7 +52,7 @@ export default async function DashboardPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminClient() as any
 
-  const [onboarding, aptRes, convRes, tasksRes, staleLeadsRes, repRes, newLeadsRes, reactivationRes, atRiskRes, opportunities] =
+  const [onboarding, aptRes, convRes, tasksRes, staleLeadsRes, repRes, newLeadsRes, reactivationRes, atRiskRes, opportunities, recoveredRes] =
     await Promise.all([
       getOnboardingProgress(organizationId),
 
@@ -120,6 +121,12 @@ export default async function DashboardPage() {
 
       // Oportunidades de retratamiento
       fetchRevenueOpportunities(organizationId),
+
+      // Recuperado este mes (número héroe — metrics_daily)
+      sb.from('metrics_daily')
+        .select('estimated_revenue_recovered')
+        .eq('organization_id', organizationId)
+        .gte('date', monthStart),
     ])
 
   const appointments = (aptRes.data ?? []) as AppointmentRow[]
@@ -140,6 +147,8 @@ export default async function DashboardPage() {
   const reactivations  = (reactivationRes.data ?? []) as ReactivationRow[]
   const atRiskPatients = (atRiskRes.data ?? []) as AtRiskPatient[]
   const oppCount       = opportunities.length
+  const recoveredMonth = ((recoveredRes.data ?? []) as { estimated_revenue_recovered: number | string }[])
+    .reduce((s, r) => s + Number(r.estimated_revenue_recovered ?? 0), 0)
   const hasAlerts      = urgentTasks > 0 || staleLeads > 0 || repAlerts > 0 || atRiskPatients.length > 0 || oppCount > 0
 
   return (
@@ -150,6 +159,31 @@ export default async function DashboardPage() {
       </div>
 
       <OnboardingChecklist progress={onboarding} />
+
+      {/* Número héroe — dinero recuperado por el agente este mes */}
+      {recoveredMonth > 0 && (
+        <Link
+          href="/backfill"
+          className="block bg-white rounded-2xl border border-fog shadow-xs px-6 py-5 hover:bg-mist transition-colors"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate">
+                Recuperado por PacienteIA este mes
+              </p>
+              <p className="text-3xl font-extrabold text-lima-600 mt-1">
+                S/ {recoveredMonth.toLocaleString('es-PE')}
+              </p>
+              <p className="text-xs text-slate mt-1">
+                Cupos de cancelaciones y ausencias que se volvieron a llenar
+              </p>
+            </div>
+            <span className="shrink-0 text-xs font-semibold text-[#7C3AED] bg-[#F3EEFF] px-2.5 py-1 rounded-full">
+              IA activa
+            </span>
+          </div>
+        </Link>
+      )}
 
       {/* Fila 1 — KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

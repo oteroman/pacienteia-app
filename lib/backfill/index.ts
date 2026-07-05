@@ -329,11 +329,111 @@ export async function fillSlot(
   selectedPatientId: string,
 ): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (createAdminClient() as any)
+  const sb = createAdminClient() as any
+
+  // Read the slot first: we need branch + treatment to value the recovery,
+  // and the prior status to keep the revenue count idempotent.
+  const { data: slot } = await sb
+    .from('slot_openings')
+    .select('id, branch_id, treatment_type, appointment_id, status')
+    .eq('id', slotId)
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  await sb
     .from('slot_openings')
     .update({ status: 'filled', selected_patient_id: selectedPatientId, filled_at: new Date().toISOString(), fill_attempts: 1 })
     .eq('id', slotId)
     .eq('organization_id', organizationId)
+
+  // Count recovered revenue only on the first transition into 'filled'.
+  if (slot && slot.status !== 'filled' && slot.branch_id) {
+    const price = await resolveRecoveredPrice(sb, organizationId, slot)
+    if (price > 0) {
+      await recordRecoveredRevenue(sb, organizationId, slot.branch_id, price)
+    }
+  }
+}
+
+// ── Recovered-revenue counter ─────────────────────────────────
+// Feeds metrics_daily.estimated_revenue_recovered — the "S/ recuperados
+// este mes" hero number on the dashboard. Values the freed slot from the
+// original appointment price, falling back to the service catalog.
+interface SlotForPricing {
+  treatment_type: string | null
+  appointment_id: string | null
+}
+
+async function resolveRecoveredPrice(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sb: any,
+  organizationId: string,
+  slot: SlotForPricing,
+): Promise<number> {
+  // 1. The price of the appointment that fell through — the money actually at risk.
+  if (slot.appointment_id) {
+    const { data: apt } = await sb
+      .from('appointments')
+      .select('price')
+      .eq('id', slot.appointment_id)
+      .maybeSingle()
+    const p = Number(apt?.price ?? 0)
+    if (p > 0) return p
+  }
+
+  // 2. Service catalog price for the same treatment.
+  if (slot.treatment_type) {
+    const { data: svc } = await sb
+      .from('services')
+      .select('price')
+      .eq('organization_id', organizationId)
+      .eq('name', slot.treatment_type)
+      .eq('is_active', true)
+      .not('price', 'is', null)
+      .limit(1)
+      .maybeSingle()
+    const p = Number(svc?.price ?? 0)
+    if (p > 0) return p
+  }
+
+  // 3. No reliable price — don't invent one.
+  return 0
+}
+
+async function recordRecoveredRevenue(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sb: any,
+  organizationId: string,
+  branchId: string,
+  amount: number,
+): Promise<void> {
+  const today = new Date().toISOString().split('T')[0]
+
+  // Read-modify-write (not upsert): metrics_daily holds many counters on the
+  // same (branch_id, date) row — a full upsert would clobber the others.
+  const { data: existing } = await sb
+    .from('metrics_daily')
+    .select('id, estimated_revenue_recovered')
+    .eq('branch_id', branchId)
+    .eq('date', today)
+    .maybeSingle()
+
+  if (existing) {
+    const current = Number(existing.estimated_revenue_recovered ?? 0)
+    await sb
+      .from('metrics_daily')
+      .update({ estimated_revenue_recovered: current + amount })
+      .eq('id', existing.id)
+  } else {
+    await sb
+      .from('metrics_daily')
+      .insert({
+        organization_id: organizationId,
+        branch_id:       branchId,
+        date:            today,
+        estimated_revenue_recovered: amount,
+      })
+  }
 }
 
 export async function expireSlot(slotId: string, organizationId: string): Promise<void> {
