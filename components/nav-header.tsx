@@ -16,8 +16,8 @@ interface NavGroup { id: string; label: string; items: NavItem[] }
 // ── Navigation map ───────────────────────────────────────────────
 
 const STANDALONE: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Bandeja',   href: '/inbox' },
+  { label: 'Resumen', href: '/dashboard' },
+  { label: 'Bandeja', href: '/inbox' },
 ]
 
 const GROUPS: NavGroup[] = [
@@ -58,24 +58,6 @@ const GROUPS: NavGroup[] = [
   },
 ]
 
-const CONFIG: NavItem[] = [
-  { label: 'Ajustes',        href: '/settings/clinic',         desc: 'Configuración de clínica'   },
-  { label: 'Staff',           href: '/settings/staff',         desc: 'Equipo y permisos'           },
-  { label: 'Sucursales',     href: '/settings/branches',       desc: 'Sedes y ubicaciones'        },
-  { label: 'Profesionales',  href: '/settings/professionals',  desc: 'Equipo médico y terapeutas' },
-  { label: 'Horarios',       href: '/settings/schedules',      desc: 'Disponibilidad y bloqueos'  },
-  { label: 'Servicios',      href: '/settings/services',       desc: 'Catálogo de tratamientos'   },
-  { label: 'Redes Sociales',  href: '/settings/social',        desc: 'Facebook, Instagram, TikTok'  },
-  { label: 'Web Forms',       href: '/settings/webforms',      desc: 'Formulario embed para tu web' },
-  { label: 'Plantillas',      href: '/settings/messages',      desc: 'Respuestas rápidas WhatsApp'  },
-  { label: 'Pagos',           href: '/settings/payments',      desc: 'Separación anti no-show'      },
-  { label: 'Automatizaciones', href: '/settings/automations', desc: 'Activar/pausar flujos automáticos' },
-  { label: 'Reputación',     href: '/settings/reputation',     desc: 'Google Business y reseñas'  },
-  { label: 'Sala de Espera', href: '/settings/waiting-room',    desc: 'QR para registro de llegada'   },
-  { label: 'API Keys',       href: '/settings/api-keys',        desc: 'Integra con sistemas externos' },
-  { label: 'Mi plan',        href: '/billing',                  desc: 'Suscripción y facturación' },
-]
-
 // ── Props ────────────────────────────────────────────────────────
 
 interface NavHeaderProps { user: { email: string } }
@@ -88,7 +70,6 @@ export function NavHeader({ user }: NavHeaderProps) {
   const { sub, trialDaysLeft } = usePlanStatus()
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
-  const [configOpen, setConfigOpen]   = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const navRef = useRef<HTMLElement>(null)
 
@@ -117,11 +98,10 @@ export function NavHeader({ user }: NavHeaderProps) {
     function handleClick(e: MouseEvent) {
       if (!navRef.current?.contains(e.target as Node)) {
         setOpenGroup(null)
-        setConfigOpen(false)
       }
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setOpenGroup(null); setConfigOpen(false); setMobileOpen(false) }
+      if (e.key === 'Escape') { setOpenGroup(null); setMobileOpen(false) }
     }
     document.addEventListener('mousedown', handleClick)
     window.addEventListener('keydown', handleKey)
@@ -249,45 +229,18 @@ export function NavHeader({ user }: NavHeaderProps) {
                 </span>
               )}
 
-              {/* Config dropdown (desktop) */}
-              <div className="relative hidden lg:block">
-                <button
-                  onClick={() => setConfigOpen(v => !v)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    CONFIG.some(i => pathname.startsWith(i.href)) || configOpen
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-slate hover:text-ink hover:bg-mist'
-                  }`}
-                >
-                  <GearIcon />
-                  <ChevronDown open={configOpen} />
-                </button>
-
-                {configOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-fog rounded-xl shadow-md z-50 py-1.5 overflow-hidden">
-                    {CONFIG.map((item) => {
-                      const active = pathname.startsWith(item.href)
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setConfigOpen(false)}
-                          className={`flex flex-col px-4 py-2.5 transition-colors ${
-                            active ? 'bg-brand-50' : 'hover:bg-mist'
-                          }`}
-                        >
-                          <span className={`text-sm font-medium ${active ? 'text-brand-700' : 'text-ink'}`}>
-                            {item.label}
-                          </span>
-                          {item.desc && (
-                            <span className="text-xs text-slate mt-0.5">{item.desc}</span>
-                          )}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              {/* Config (desktop) — enlaza al hub de configuración */}
+              <Link
+                href="/settings"
+                aria-label="Configuración"
+                className={`hidden lg:flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  pathname.startsWith('/settings') || pathname.startsWith('/billing')
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-slate hover:text-ink hover:bg-mist'
+                }`}
+              >
+                <GearIcon />
+              </Link>
 
               {/* Email (desktop) */}
               <span className="hidden xl:block text-sm text-slate truncate max-w-[160px]">
@@ -388,25 +341,18 @@ export function NavHeader({ user }: NavHeaderProps) {
                 </div>
               ))}
 
-              {/* Config */}
+              {/* Config — entrada única al hub de configuración */}
               <div className="mt-3 pt-3 border-t border-fog">
-                <p className="px-5 py-1 text-[10px] font-bold text-slate uppercase tracking-widest">
+                <Link
+                  href="/settings"
+                  className={`flex items-center px-5 py-2.5 text-sm font-medium transition-colors ${
+                    pathname.startsWith('/settings') || pathname.startsWith('/billing')
+                      ? 'text-brand-700 bg-brand-50'
+                      : 'text-slate hover:bg-mist hover:text-ink'
+                  }`}
+                >
                   Configuración
-                </p>
-                {CONFIG.map(({ label, href }) => {
-                  const active = pathname.startsWith(href)
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={`flex items-center px-5 py-2.5 text-sm transition-colors ${
-                        active ? 'text-brand-700 font-medium bg-brand-50' : 'text-slate hover:bg-mist hover:text-ink'
-                      }`}
-                    >
-                      {label}
-                    </Link>
-                  )
-                })}
+                </Link>
               </div>
             </nav>
 
