@@ -70,21 +70,25 @@ function aptTopPx(isoUtc: string): number {
   return (minsFromStart / SLOT_MIN) * SLOT_H
 }
 
+function aptDurationMin(apt: CalendarAppointment): number {
+  return apt.duration_min && apt.duration_min > 0 ? apt.duration_min : DURATION_MIN
+}
+
 function layoutApts(apts: CalendarAppointment[]): PositionedApt[] {
   const sorted = [...apts].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
   const cols:  CalendarAppointment[][] = []
 
   for (const apt of sorted) {
-    const aptEnd = new Date(apt.scheduled_at).getTime() + DURATION_MIN * 60_000
+    const start  = new Date(apt.scheduled_at).getTime()
     let placed   = false
     for (let c = 0; c < cols.length; c++) {
-      const lastEnd = new Date(cols[c].at(-1)!.scheduled_at).getTime() + DURATION_MIN * 60_000
-      if (new Date(apt.scheduled_at).getTime() >= lastEnd) {
+      const last    = cols[c].at(-1)!
+      const lastEnd = new Date(last.scheduled_at).getTime() + aptDurationMin(last) * 60_000
+      if (start >= lastEnd) {
         cols[c].push(apt); placed = true; break
       }
     }
     if (!placed) cols.push([apt])
-    void aptEnd
   }
 
   const result: PositionedApt[] = []
@@ -93,7 +97,7 @@ function layoutApts(apts: CalendarAppointment[]): PositionedApt[] {
       result.push({
         ...apt,
         topPx:    aptTopPx(apt.scheduled_at),
-        heightPx: (DURATION_MIN / SLOT_MIN) * SLOT_H,
+        heightPx: (aptDurationMin(apt) / SLOT_MIN) * SLOT_H,
         col:      c,
         colCount: cols.length,
       })
@@ -120,6 +124,13 @@ const STATUS_OPACITY: Record<string, string> = {
   scheduled: 'opacity-90',
   completed: 'opacity-50',
   no_show:   'opacity-30 grayscale',
+}
+
+const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
+  confirmed: { text: 'Confirmada', cls: 'bg-lima-50 text-lima-700' },
+  scheduled: { text: 'Programada', cls: 'bg-blue-50 text-blue-700' },
+  completed: { text: 'Atendida',   cls: 'bg-mist text-slate'      },
+  no_show:   { text: 'No asistió', cls: 'bg-red-50 text-red-700'  },
 }
 
 // ── Time label slots ──────────────────────────────────────────────────────────
@@ -200,6 +211,9 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
     const id = setInterval(tick, 60_000)
     return () => clearInterval(id)
   }, [])
+
+  // Hover preview card
+  const [hover, setHover] = useState<{ apt: CalendarAppointment; rect: DOMRect } | null>(null)
 
   const saturdayISO = addDays(weekStartISO, 5)
   const days        = Array.from({ length: 6 }, (_, i) => addDays(weekStartISO, i))
@@ -534,9 +548,11 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
                         key={apt.id}
                         data-apt="1"
                         draggable
-                        onDragStart={(e) => handleDragStart(apt, e)}
+                        onDragStart={(e) => { setHover(null); handleDragStart(apt, e) }}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => { e.stopPropagation(); if (!dragging) router.push(`/appointments/${apt.id}`) }}
+                        onMouseEnter={(e) => { if (!dragging) setHover({ apt, rect: e.currentTarget.getBoundingClientRect() }) }}
+                        onMouseLeave={() => setHover(null)}
                         className={`absolute rounded-md px-1.5 py-1 text-left overflow-hidden text-white text-[11px] leading-tight hover:brightness-110 transition-all shadow-xs ${opacity} ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                         style={{
                           backgroundColor: color,
@@ -546,7 +562,6 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
                           width:  `calc(${widthPct}% - 4px)`,
                           zIndex: 10,
                         }}
-                        title={`${apt.patient_name} · ${apt.treatment_type} — arrastra para reagendar`}
                       >
                         <p className="font-semibold truncate leading-tight">
                           <span className="opacity-75 font-normal">{aptTimeLabel(apt.scheduled_at)}</span> {apt.patient_name || '—'}
@@ -564,6 +579,37 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
           </div>
         </div>
       </div>
+
+      {/* Hover preview card */}
+      {hover && !dragging && (() => {
+        const W = 240, gap = 10
+        const flipLeft = hover.rect.right + W + gap > window.innerWidth
+        const left = flipLeft ? Math.max(8, hover.rect.left - W - gap) : hover.rect.right + gap
+        const top  = Math.min(hover.rect.top, window.innerHeight - 175)
+        const dur  = hover.apt.duration_min && hover.apt.duration_min > 0 ? hover.apt.duration_min : DURATION_MIN
+        const start = aptTimeLabel(hover.apt.scheduled_at)
+        const end   = aptTimeLabel(new Date(new Date(hover.apt.scheduled_at).getTime() + dur * 60_000).toISOString())
+        const st    = STATUS_LABEL[hover.apt.status] ?? { text: hover.apt.status, cls: 'bg-mist text-slate' }
+        return (
+          <div
+            className="fixed z-50 w-60 rounded-xl border border-fog bg-white shadow-md p-3.5 pointer-events-none"
+            style={{ left, top }}
+          >
+            <p className="text-sm font-semibold text-ink truncate">{hover.apt.patient_name || 'Sin nombre'}</p>
+            <p className="text-xs text-slate mt-0.5">{hover.apt.treatment_type}</p>
+            <p className="text-sm font-medium text-ink mt-2">
+              {start} – {end} <span className="text-xs font-normal text-slate">({dur} min)</span>
+            </p>
+            {hover.apt.professional_name && (
+              <p className="flex items-center gap-1.5 text-xs text-slate mt-1.5">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: hover.apt.professional_color ?? '#9CA3AF' }} />
+                {hover.apt.professional_name}
+              </p>
+            )}
+            <span className={`inline-block mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+          </div>
+        )
+      })()}
     </div>
   )
 }

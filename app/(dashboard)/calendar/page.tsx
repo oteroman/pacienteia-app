@@ -63,6 +63,7 @@ export interface CalendarAppointment {
   professional_id:   string | null
   professional_name: string | null
   professional_color: string | null
+  duration_min:      number   // real duration from the service catalog (default 60)
 }
 
 export interface CalendarSchedule {
@@ -111,7 +112,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     ? getDayRange(dayISO)
     : getWeekRange(weekStartISO)
 
-  const [aptsRes, prosRes, schedRes, blocksRes] = await Promise.all([
+  const [aptsRes, prosRes, schedRes, blocksRes, svcRes] = await Promise.all([
     sb.from('appointments')
       .select('id, treatment_type, scheduled_at, status, professional_id, patients(full_name), professionals(name, color)')
       .eq('organization_id', organizationId)
@@ -136,7 +137,16 @@ export default async function CalendarPage({ searchParams }: PageProps) {
       .eq('organization_id', organizationId)
       .eq('branch_id', branchId)
       .gte('block_date', view === 'day' ? dayISO : weekStartISO),
+    sb.from('services')
+      .select('name, duration_min')
+      .eq('organization_id', organizationId)
+      .eq('branch_id', branchId),
   ])
+
+  const svcDuration = new Map<string, number>()
+  for (const s of ((svcRes.data ?? []) as { name: string; duration_min: number | null }[])) {
+    if (s.duration_min && s.duration_min > 0) svcDuration.set(s.name, s.duration_min)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const appointments: CalendarAppointment[] = ((aptsRes.data ?? []) as any[]).map((row) => ({
@@ -148,6 +158,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     professional_id:   row.professional_id ?? null,
     professional_name: row.professionals?.name ?? null,
     professional_color: row.professionals?.color ?? null,
+    duration_min:      svcDuration.get(row.treatment_type) ?? 60,
   }))
 
   const professionals: CalendarProfessional[] = prosRes.data ?? []
