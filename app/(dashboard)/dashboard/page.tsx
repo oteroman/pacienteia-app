@@ -291,9 +291,12 @@ export default async function DashboardPage() {
             </Link>
           </div>
           {appointments.length === 0 ? (
-            <p className="px-6 py-8 text-sm text-slate text-center">
-              No hay citas programadas para hoy
-            </p>
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm font-medium text-ink">Sin citas para hoy</p>
+              <p className="text-xs text-slate mt-1">
+                Agenda la primera con <span className="font-medium text-brand-600">+ Nueva cita</span> arriba.
+              </p>
+            </div>
           ) : (
             <ul className="divide-y divide-fog">
               {appointments.map((apt) => (

@@ -99,10 +99,24 @@ export default async function PatientsPage({ searchParams }: PageProps) {
       {view === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {list.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-slate">
-              <p className="text-4xl mb-2">👤</p>
-              <p className="text-sm">No se encontraron pacientes</p>
-            </div>
+            (q || status) ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-sm font-medium text-ink">No se encontraron pacientes con esos filtros</p>
+                <p className="text-xs text-slate mt-1">Prueba con otro nombre o teléfono, o quita el filtro.</p>
+              </div>
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-sm font-medium text-ink">Aún no tienes pacientes registrados</p>
+                <p className="text-xs text-slate mt-1 max-w-sm mx-auto">
+                  Registra el primero para llevar su historial, agendar sus citas y hacerle seguimiento por WhatsApp.
+                </p>
+                <div className="mt-4 flex justify-center">
+                  <GatedActionButton href="/patients/new" resource="leads">
+                    + Registrar paciente
+                  </GatedActionButton>
+                </div>
+              </div>
+            )
           ) : (
             list.map((p) => <PatientCard key={p.id} patient={p} />)
           )}

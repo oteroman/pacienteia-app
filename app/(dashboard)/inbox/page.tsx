@@ -163,9 +163,12 @@ export default async function InboxPage({ searchParams }: { searchParams: Search
 
           {conversations.length === 0 && active.length === 0 && (
             <div className="p-8 text-center">
-              <p className="text-xs text-slate">La bandeja está vacía</p>
-              <Link href="/inbox/new" className="text-xs text-brand-600 hover:underline mt-2 block">
-                Registrar entrada →
+              <p className="text-sm font-medium text-ink">Tu bandeja está al día</p>
+              <p className="text-xs text-slate mt-1">
+                Aquí llegan los mensajes de WhatsApp y las consultas de tus pacientes. Cuando alguien escriba, aparece acá.
+              </p>
+              <Link href="/inbox/new" className="inline-block text-xs font-medium text-brand-600 hover:text-brand-700 mt-3">
+                Registrar una consulta manual →
               </Link>
             </div>
           )}
