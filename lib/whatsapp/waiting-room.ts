@@ -1,6 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWhatsAppText }  from '@/lib/whatsapp/send'
-import { decryptToken }      from '@/lib/crypto/whatsapp-token'
 
 const TRIGGERS = ['sala de espera', 'sala espera', '#espera', 'ya llegue', 'ya llegué', 'llegue', 'llegué']
 
@@ -107,17 +106,9 @@ export async function handleWaitingRoomEntry(params: Params): Promise<void> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function sendMsg(sb: any, orgId: string, branchId: string, phone: string, msg: string) {
-  const { data: cfg } = await sb
-    .from('branch_whatsapp_config')
-    .select('phone_number_id, access_token_enc')
-    .eq('organization_id', orgId)
-    .eq('branch_id', branchId)
-    .eq('status', 'active')
-    .maybeSingle()
-  if (!cfg) return
+async function sendMsg(_sb: any, _orgId: string, branchId: string, phone: string, msg: string) {
+  // sendWhatsAppText resolves the branch WhatsApp config internally from branchId.
   try {
-    const token = decryptToken(cfg.access_token_enc)
-    await sendWhatsAppText(phone, msg, cfg.phone_number_id, token)
+    await sendWhatsAppText({ branchId, to: phone, body: msg })
   } catch { /* non-fatal */ }
 }

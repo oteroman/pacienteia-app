@@ -15,6 +15,7 @@ const FEATURE_LABELS: Record<PlanFeature, string> = {
   csv_export:              'Exportación CSV',
   roi_dashboard:           'Dashboard ROI en S/ (valor recuperado)',
   api_webhooks:            'API externa y webhooks',
+  multi_branch:            'Multi-sucursal (varias sedes)',
 }
 
 // All features in display order

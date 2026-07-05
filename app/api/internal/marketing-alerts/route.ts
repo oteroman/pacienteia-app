@@ -102,9 +102,11 @@ export async function POST(req: NextRequest) {
           `Revisa la bandeja de entrada: app.pacienteia.com/inbox`
 
         try {
-          const { decryptToken } = await import('@/lib/crypto/whatsapp-token')
-          const token = decryptToken(waConfig.access_token_enc)
-          await sendWhatsAppText(ownerProfile.whatsapp_phone, msg, waConfig.phone_number_id, token)
+          await sendWhatsAppText({
+            branchId: branch.id,
+            to:       ownerProfile.whatsapp_phone,
+            body:     msg,
+          })
           if (alert?.id) {
             await sb.from('marketing_alerts').update({ message_sent: true }).eq('id', alert.id)
           }

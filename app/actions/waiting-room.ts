@@ -3,19 +3,6 @@ import { revalidatePath }    from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getActiveContext }  from '@/lib/tenant/context'
 import { sendWhatsAppText }  from '@/lib/whatsapp/send'
-import { decryptToken }      from '@/lib/crypto/whatsapp-token'
-
-async function getWaConfig(sb: ReturnType<typeof createAdminClient>, orgId: string, branchId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (sb as any)
-    .from('branch_whatsapp_config')
-    .select('phone_number_id, access_token_enc')
-    .eq('organization_id', orgId)
-    .eq('branch_id', branchId)
-    .eq('status', 'active')
-    .maybeSingle()
-  return data
-}
 
 export async function callPatient(id: string): Promise<void> {
   const ctx = await getActiveContext()
@@ -37,18 +24,13 @@ export async function callPatient(id: string): Promise<void> {
     .eq('organization_id', organizationId)
 
   if (entry?.phone) {
-    const cfg = await getWaConfig(sb, organizationId, branchId)
-    if (cfg) {
-      try {
-        const token = decryptToken(cfg.access_token_enc)
-        await sendWhatsAppText(
-          entry.phone,
-          `¡${entry.patient_name}, es tu turno! 🟢\n\nPor favor pasa a la sala de atención. ¡Te esperamos! 😊`,
-          cfg.phone_number_id,
-          token,
-        )
-      } catch { /* non-fatal */ }
-    }
+    try {
+      await sendWhatsAppText({
+        branchId,
+        to:   entry.phone,
+        body: `¡${entry.patient_name}, es tu turno! 🟢\n\nPor favor pasa a la sala de atención. ¡Te esperamos! 😊`,
+      })
+    } catch { /* non-fatal */ }
   }
 
   revalidatePath('/waiting-room')
