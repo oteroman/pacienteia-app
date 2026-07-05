@@ -8,7 +8,7 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
         <Link href="/" className="text-white font-bold text-lg tracking-tight">
           Paciente<span className="text-brand-400">IA</span>
         </Link>
-        <span className="text-xs text-gray-500">Configuración inicial</span>
+        <span className="text-xs text-slate">Configuración inicial</span>
       </header>
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         {children}

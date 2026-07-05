@@ -3,12 +3,12 @@ import type { ReactNode } from 'react'
 type Variant = 'gray' | 'green' | 'red' | 'yellow' | 'blue' | 'purple' | 'brand'
 
 const variants: Record<Variant, string> = {
-  gray:   'bg-gray-100 text-gray-600',
-  green:  'bg-green-100 text-green-700',
+  gray:   'bg-[#F3F6F9] text-slate',
+  green:  'bg-lima-100 text-lima-700',
   red:    'bg-red-100 text-red-600',
   yellow: 'bg-yellow-100 text-yellow-700',
   blue:   'bg-blue-100 text-blue-700',
-  purple: 'bg-purple-100 text-purple-700',
+  purple: 'bg-ai-100 text-ai-600',
   brand:  'bg-brand-100 text-brand-700',
 }
 

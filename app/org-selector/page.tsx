@@ -79,7 +79,7 @@ export default async function OrgSelectorPage({
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white">Selecciona tu organización</h1>
-          <p className="text-sm text-gray-400 mt-1">Elige la clínica y sucursal con la que quieres trabajar</p>
+          <p className="text-sm text-slate mt-1">Elige la clínica y sucursal con la que quieres trabajar</p>
         </div>
 
         <div className="space-y-3">
@@ -95,7 +95,7 @@ export default async function OrgSelectorPage({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold text-white">{org?.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{industry} · {role}</p>
+                      <p className="text-xs text-slate mt-0.5">{industry} · {role}</p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase
                       ${org?.subscription_status === 'active'
@@ -107,7 +107,7 @@ export default async function OrgSelectorPage({
                 </div>
 
                 {branches.length === 0 ? (
-                  <div className="px-5 py-3 text-sm text-gray-500">Sin sucursales configuradas</div>
+                  <div className="px-5 py-3 text-sm text-slate">Sin sucursales configuradas</div>
                 ) : (
                   <div className="divide-y divide-gray-800">
                     {branches.map((branch: any) => {
@@ -121,10 +121,10 @@ export default async function OrgSelectorPage({
                             <div>
                               <p className="text-sm font-medium text-white">{branch.name}</p>
                               {branch.city && (
-                                <p className="text-xs text-gray-500">{branch.city}</p>
+                                <p className="text-xs text-slate">{branch.city}</p>
                               )}
                             </div>
-                            <span className="text-gray-600 text-sm">→</span>
+                            <span className="text-slate text-sm">→</span>
                           </button>
                         </form>
                       )
@@ -136,7 +136,7 @@ export default async function OrgSelectorPage({
           })}
         </div>
 
-        <p className="text-center text-xs text-gray-600">
+        <p className="text-center text-xs text-slate">
           ¿Necesitas acceso a otra organización?{' '}
           <a href="mailto:soporte@pacienteia.com" className="text-blue-400 hover:underline">
             Contacta a soporte

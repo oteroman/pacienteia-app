@@ -31,8 +31,8 @@ export default async function OpsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Operaciones</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-ink">Operaciones</h1>
+          <p className="text-sm text-slate mt-1">
             Vista cross-sistema: intake → inbox → copiloto → resolución
           </p>
         </div>
@@ -46,19 +46,19 @@ export default async function OpsPage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Nuevos" value={stats.intakesNew}
-          color={stats.intakesNew > 10 ? 'text-red-600' : 'text-gray-900'} />
+          color={stats.intakesNew > 10 ? 'text-red-600' : 'text-ink'} />
         <StatCard label="En proceso" value={stats.intakesInProgress} />
         <StatCard label="Esperando" value={stats.intakesWaiting}
-          color={stats.intakesWaiting > 5 ? 'text-amber-600' : 'text-gray-900'} />
+          color={stats.intakesWaiting > 5 ? 'text-amber-600' : 'text-ink'} />
         <StatCard label="Tareas abiertas" value={stats.tasksOpen}
-          color={stats.tasksOpen > 20 ? 'text-amber-600' : 'text-gray-900'} />
+          color={stats.tasksOpen > 20 ? 'text-amber-600' : 'text-ink'} />
         <StatCard label="Escalaciones" value={stats.escalationsActive}
-          color={stats.escalationsActive > 0 ? 'text-red-600' : 'text-green-600'} />
+          color={stats.escalationsActive > 0 ? 'text-red-600' : 'text-lima-600'} />
         <StatCard label="Follow-ups vencidos" value={stats.followUpsDue}
-          color={stats.followUpsDue > 0 ? 'text-amber-600' : 'text-green-600'} />
+          color={stats.followUpsDue > 0 ? 'text-amber-600' : 'text-lima-600'} />
         <StatCard label="Recibidos hoy" value={stats.intakesToday} />
         <StatCard label="Resueltos hoy" value={stats.resolvedToday}
-          color={stats.resolvedToday > 0 ? 'text-green-600' : 'text-gray-400'} />
+          color={stats.resolvedToday > 0 ? 'text-lima-600' : 'text-slate'} />
       </div>
 
       {/* Attention required */}
@@ -80,13 +80,13 @@ export default async function OpsPage() {
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${CHANNEL_COLORS[e.sourceChannel]}`}>
                     {CHANNEL_LABELS[e.sourceChannel]}
                   </span>
-                  {e.contactName && <span className="text-xs font-semibold text-gray-700">{e.contactName}</span>}
+                  {e.contactName && <span className="text-xs text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">{e.contactName}</span>}
                 </div>
-                <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">
+                <p className="text-sm text-slate mt-0.5 line-clamp-1">
                   {e.normalizedSummary ?? 'Sin resumen'}
                 </p>
               </div>
-              <span className="text-xs text-gray-400 flex-shrink-0">{timeAgo(e.createdAt)}</span>
+              <span className="text-xs text-slate flex-shrink-0">{timeAgo(e.createdAt)}</span>
             </Link>
           ))}
 
@@ -102,9 +102,9 @@ export default async function OpsPage() {
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${CHANNEL_COLORS[f.sourceChannel]}`}>
                     {CHANNEL_LABELS[f.sourceChannel]}
                   </span>
-                  {f.contactName && <span className="text-xs font-semibold text-gray-700">{f.contactName}</span>}
+                  {f.contactName && <span className="text-xs text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">{f.contactName}</span>}
                 </div>
-                <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">
+                <p className="text-sm text-slate mt-0.5 line-clamp-1">
                   {f.normalizedSummary ?? 'Sin resumen'}
                 </p>
               </div>
@@ -118,7 +118,7 @@ export default async function OpsPage() {
 
         {/* Automation rules */}
         <section className="rounded-2xl border bg-white p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-800">Reglas de automatización activas</h2>
+          <h2 className="text-sm font-semibold text-ink">Reglas de automatización activas</h2>
           <div className="space-y-2">
             {AUTOMATION_RULES.filter((r) => r.implemented).map((rule) => (
               <div key={rule.id} className="flex items-start gap-3">
@@ -127,8 +127,8 @@ export default async function OpsPage() {
                   <WhenBadge when={rule.when} schedule={rule.cronSchedule} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-gray-700">{rule.trigger}</p>
-                  <p className="text-[11px] text-gray-500">{rule.action}</p>
+                  <p className="text-xs font-medium text-slate">{rule.trigger}</p>
+                  <p className="text-[11px] text-slate">{rule.action}</p>
                 </div>
               </div>
             ))}
@@ -137,21 +137,21 @@ export default async function OpsPage() {
 
         {/* Recent audit events */}
         <section className="rounded-2xl border bg-white p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-800">Log de eventos recientes</h2>
+          <h2 className="text-sm font-semibold text-ink">Log de eventos recientes</h2>
           {events.length === 0 ? (
-            <p className="text-xs text-gray-400">Sin eventos registrados aún.</p>
+            <p className="text-xs text-slate">Sin eventos registrados aún.</p>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {events.map((ev) => (
-                <div key={ev.id} className="flex items-start gap-3 py-1.5 border-b border-gray-50 last:border-0">
+                <div key={ev.id} className="flex items-start gap-3 py-1.5 border-b border-fog last:border-0">
                   <EventTypeBadge type={ev.eventType} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-slate">
                       {EVENT_LABEL[ev.eventType] ?? ev.eventType}
                       {ev.details?.intent ? ` · ${ev.details.intent}` : ''}
                       {ev.details?.taskTitle ? ` · "${ev.details.taskTitle}"` : ''}
                     </p>
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-[10px] text-slate">
                       {ev.actor === 'system' ? 'Automático' : 'Staff'} · {timeAgo(ev.createdAt)}
                     </p>
                   </div>
@@ -170,7 +170,7 @@ export default async function OpsPage() {
       {allClinics.length > 0 && (
         <section className="rounded-2xl border bg-white p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">Rendimiento por clínica (30 días)</h2>
+            <h2 className="text-sm font-semibold text-ink">Rendimiento por clínica (30 días)</h2>
             <Link href="/analytics/revenue" className="text-[11px] text-brand-600 hover:underline">
               ver detalle →
             </Link>
@@ -178,31 +178,31 @@ export default async function OpsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-gray-400 text-left border-b border-gray-100">
-                  <th className="pb-2 font-medium">Clínica</th>
-                  <th className="pb-2 font-medium text-right">Completadas</th>
-                  <th className="pb-2 font-medium text-right">Fill rate</th>
-                  <th className="pb-2 font-medium text-right">SLA</th>
-                  <th className="pb-2 font-medium text-right">Revenue</th>
-                  <th className="pb-2 font-medium text-right">Score</th>
+                <tr className="text-slate text-left border-b border-fog">
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Clínica</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Completadas</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Fill rate</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">SLA</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Revenue</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-fog">
                 {allClinics.map((c) => (
-                  <tr key={c.clinicId} className="hover:bg-gray-50/50">
-                    <td className="py-2 font-medium text-gray-700 max-w-[160px] truncate">{c.clinicName}</td>
-                    <td className="py-2 text-right tabular-nums text-gray-600">{c.completed}</td>
+                  <tr key={c.clinicId} className="hover:bg-mist/50">
+                    <td className="py-2 font-medium text-slate max-w-[160px] truncate">{c.clinicName}</td>
+                    <td className="py-2 text-right tabular-nums text-slate">{c.completed}</td>
                     <td className="py-2 text-right tabular-nums">
-                      <span className={c.fillRate >= 50 ? 'text-green-600' : c.fillRate >= 25 ? 'text-amber-600' : 'text-red-500'}>
+                      <span className={c.fillRate >= 50 ? 'text-lima-600' : c.fillRate >= 25 ? 'text-amber-600' : 'text-red-500'}>
                         {c.fillRate}%
                       </span>
                     </td>
                     <td className="py-2 text-right tabular-nums">
-                      <span className={c.slaMetRate >= 70 ? 'text-green-600' : c.slaMetRate >= 40 ? 'text-amber-600' : 'text-red-500'}>
+                      <span className={c.slaMetRate >= 70 ? 'text-lima-600' : c.slaMetRate >= 40 ? 'text-amber-600' : 'text-red-500'}>
                         {c.slaMetRate}%
                       </span>
                     </td>
-                    <td className="py-2 text-right tabular-nums text-gray-600">
+                    <td className="py-2 text-right tabular-nums text-slate">
                       {new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', maximumFractionDigits: 0 }).format(c.revenueActual)}
                     </td>
                     <td className="py-2 text-right">
@@ -221,46 +221,46 @@ export default async function OpsPage() {
 }
 
 function ScoreBadge({ score }: { score: number }) {
-  const color = score >= 70 ? 'bg-green-100 text-green-700'
+  const color = score >= 70 ? 'bg-lima-100 text-lima-700'
     : score >= 40 ? 'bg-amber-100 text-amber-700'
     : 'bg-red-100 text-red-600'
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${color}`}>{score}</span>
 }
 
 // ── Sub-components ────────────────────────────────────────────
-function StatCard({ label, value, color = 'text-gray-900' }: { label: string; value: number; color?: string }) {
+function StatCard({ label, value, color = 'text-ink' }: { label: string; value: number; color?: string }) {
   return (
     <div className="rounded-xl border bg-white p-4">
-      <p className="text-xs text-gray-400">{label}</p>
+      <p className="text-xs text-slate">{label}</p>
       <p className={`text-3xl font-bold tabular-nums mt-1 ${color}`}>{value}</p>
     </div>
   )
 }
 
 function EngineBadge({ engine }: { engine: string }) {
-  const color = engine === 'rules' ? 'bg-gray-100 text-gray-600'
-    : engine === 'llm' ? 'bg-purple-100 text-purple-700'
+  const color = engine === 'rules' ? 'bg-[#F3F6F9] text-slate'
+    : engine === 'llm' ? 'bg-ai-100 text-ai-600'
     : 'bg-blue-100 text-blue-700'
   const label = engine === 'rules' ? 'regla' : engine === 'llm' ? 'IA' : 'regla+IA'
   return <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${color}`}>{label}</span>
 }
 
 function WhenBadge({ when, schedule }: { when: string; schedule?: string }) {
-  const color = when === 'cron' ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-700'
+  const color = when === 'cron' ? 'bg-amber-50 text-amber-600' : 'bg-lima-50 text-lima-700'
   const label = when === 'cron' ? (schedule ?? 'cron') : 'evento'
   return <span className={`text-[9px] px-1.5 py-0.5 rounded ${color}`}>{label}</span>
 }
 
 const EVENT_COLORS: Record<string, string> = {
   created:            'bg-blue-100 text-blue-700',
-  normalized:         'bg-purple-100 text-purple-700',
+  normalized:         'bg-ai-100 text-ai-600',
   assigned:           'bg-brand-100 text-brand-700',
-  status_changed:     'bg-gray-100 text-gray-600',
+  status_changed:     'bg-[#F3F6F9] text-slate',
   escalated:          'bg-red-100 text-red-700',
   followup_triggered: 'bg-amber-100 text-amber-700',
   task_created:       'bg-indigo-100 text-indigo-700',
-  resolved:           'bg-green-100 text-green-700',
-  dismissed:          'bg-gray-100 text-gray-500',
+  resolved:           'bg-lima-100 text-lima-700',
+  dismissed:          'bg-[#F3F6F9] text-slate',
 }
 
 const EVENT_LABEL: Record<string, string> = {
@@ -276,7 +276,7 @@ const EVENT_LABEL: Record<string, string> = {
 }
 
 function EventTypeBadge({ type }: { type: string }) {
-  const cls = EVENT_COLORS[type] ?? 'bg-gray-100 text-gray-500'
+  const cls = EVENT_COLORS[type] ?? 'bg-[#F3F6F9] text-slate'
   return (
     <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 mt-0.5 ${cls}`}>
       {type.replace('_', ' ')}

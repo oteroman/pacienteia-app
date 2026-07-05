@@ -190,23 +190,23 @@ export async function fetchRenewalSignals(periodKey: PeriodKey = '30d'): Promise
     fetchAllClinicsPerformance(periodKey),
 
     sb.from('slot_openings')
-      .select('clinic_id')
+      .select('organization_id')
       .gte('created_at', start),
 
     sb.from('intakes')
-      .select('clinic_id')
+      .select('organization_id')
       .gte('created_at', start),
   ])
 
-  type IdRow = { clinic_id: string }
+  type IdRow = { organization_id: string }
   const slotsByClinic   = new Map<string, number>()
   const intakesByClinic = new Map<string, number>()
 
   for (const r of (slotRes.data ?? []) as IdRow[]) {
-    slotsByClinic.set(r.clinic_id, (slotsByClinic.get(r.clinic_id) ?? 0) + 1)
+    slotsByClinic.set(r.organization_id, (slotsByClinic.get(r.organization_id) ?? 0) + 1)
   }
   for (const r of (intakeRes.data ?? []) as IdRow[]) {
-    intakesByClinic.set(r.clinic_id, (intakesByClinic.get(r.clinic_id) ?? 0) + 1)
+    intakesByClinic.set(r.organization_id, (intakesByClinic.get(r.organization_id) ?? 0) + 1)
   }
 
   const signals: ClinicSignal[] = rows.map((row) => {

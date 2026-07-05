@@ -35,7 +35,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Citas</h1>
+        <h1 className="text-2xl font-bold text-ink">Citas</h1>
         <GatedActionButton href="/appointments/new" resource="appointments">
           + Nueva cita
         </GatedActionButton>

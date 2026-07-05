@@ -117,7 +117,12 @@ export async function fetchCopilotDashboard(clinicId: string): Promise<CopilotDa
 
   const openTasks = ((openRes.data ?? []) as TaskRow[])
     .map(mapTask)
-    .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
+    .sort((a, b) => {
+      // Primary: newest first. Secondary: priority within same second.
+      const dateDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      if (dateDiff !== 0) return dateDiff
+      return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+    })
 
   const doneTasks = ((doneRes.data ?? []) as TaskRow[]).map(mapTask)
 

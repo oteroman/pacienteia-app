@@ -2,8 +2,8 @@
  * GET /api/internal/performance-alerts
  *
  * Runs every Monday at 9 AM America/Lima (14:00 UTC).
- * Checks key performance indicators for each clinic over the last 7 days.
- * Creates a copilot task if a clinic crosses an alert threshold.
+ * Checks key performance indicators for each org over the last 7 days.
+ * Creates a copilot task if an org crosses an alert threshold.
  *
  * Thresholds (only fires when there is enough activity to be meaningful):
  *   fill_rate  < 30%  with ≥ 3 slots opened
@@ -31,89 +31,74 @@ export async function GET(req: NextRequest) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sb      = createAdminClient() as any
-  const clinics = await fetchAllClinicsPerformance('week')
+  const sb    = createAdminClient() as any
+  const orgs  = await fetchAllClinicsPerformance('week')
 
-  // We also need raw counts to apply the "minimum activity" guard.
-  // fetchAllClinicsPerformance gives fillRate (%), but not slotsOpened count.
-  // Re-query that lightweight data:
   const now   = new Date()
   const start = new Date(now.getTime() - 7 * 86_400_000).toISOString()
 
-  type SlotCount    = { clinic_id: string }
-  type IntakeCount  = { clinic_id: string; first_response_at: string | null; sla_due_at: string | null }
+  type SlotCount   = { organization_id: string }
+  type IntakeCount = { organization_id: string; first_response_at: string | null; sla_due_at: string | null }
 
   const [slotRes, intakeRes] = await Promise.all([
     sb.from('slot_openings')
-      .select('clinic_id')
+      .select('organization_id')
       .gte('created_at', start),
     sb.from('intakes')
-      .select('clinic_id, first_response_at, sla_due_at')
+      .select('organization_id, first_response_at, sla_due_at')
       .gte('created_at', start),
   ])
 
-  const slotsByClinic   = new Map<string, number>()
-  const intakesByClinic = new Map<string, number>()
+  const slotsByOrg   = new Map<string, number>()
+  const intakesByOrg = new Map<string, number>()
 
   for (const r of (slotRes.data ?? []) as SlotCount[]) {
-    slotsByClinic.set(r.clinic_id, (slotsByClinic.get(r.clinic_id) ?? 0) + 1)
+    slotsByOrg.set(r.organization_id, (slotsByOrg.get(r.organization_id) ?? 0) + 1)
   }
   for (const r of (intakeRes.data ?? []) as IntakeCount[]) {
-    intakesByClinic.set(r.clinic_id, (intakesByClinic.get(r.clinic_id) ?? 0) + 1)
+    intakesByOrg.set(r.organization_id, (intakesByOrg.get(r.organization_id) ?? 0) + 1)
   }
 
   let alertsFired = 0
 
-  for (const clinic of clinics) {
+  for (const org of orgs) {
     const alerts: string[] = []
-    const slotsOpened = slotsByClinic.get(clinic.clinicId) ?? 0
-    const intakesTotal = intakesByClinic.get(clinic.clinicId) ?? 0
+    const slotsOpened  = slotsByOrg.get(org.clinicId) ?? 0
+    const intakesTotal = intakesByOrg.get(org.clinicId) ?? 0
 
-    if (slotsOpened >= 3 && clinic.fillRate < 30) {
-      alerts.push(`Fill rate bajo: ${clinic.fillRate}% (${slotsOpened} slots abiertos)`)
+    if (slotsOpened >= 3 && org.fillRate < 30) {
+      alerts.push(`Fill rate bajo: ${org.fillRate}% (${slotsOpened} slots abiertos)`)
     }
-    if (intakesTotal >= 5 && clinic.slaMetRate < 50) {
-      alerts.push(`SLA bajo: ${clinic.slaMetRate}% de respuestas a tiempo (${intakesTotal} intakes)`)
+    if (intakesTotal >= 5 && org.slaMetRate < 50) {
+      alerts.push(`SLA bajo: ${org.slaMetRate}% de respuestas a tiempo (${intakesTotal} intakes)`)
     }
 
     if (alerts.length === 0) continue
 
-    // Create a synthetic interaction + copilot task for this clinic
     const { data: interaction } = await sb.from('interactions').insert({
-      clinic_id:   clinic.clinicId,
-      source_type: 'staff_note',
-      raw_content: `[Alerta semanal] ${alerts.join(' · ')}`,
-      status:      'done',
+      organization_id: org.clinicId,
+      source_type:     'staff_note',
+      raw_content:     `[Alerta semanal] ${alerts.join(' · ')}`,
+      status:          'done',
     }).select('id').single()
 
     if (interaction) {
       await sb.from('copilot_tasks').insert({
-        interaction_id: interaction.id,
-        clinic_id:      clinic.clinicId,
-        patient_id:     null,
-        title:          `⚠️ Alerta de rendimiento semanal`,
-        description:    alerts.join('\n'),
-        priority:       'high',
+        interaction_id:  interaction.id,
+        organization_id: org.clinicId,
+        patient_id:      null,
+        title:           `⚠️ Alerta de rendimiento semanal`,
+        description:     alerts.join('\n'),
+        priority:        'high',
       })
       alertsFired++
     }
-
-    // Log to workflow_runs
-    await sb.from('workflow_runs').insert({
-      clinic_id:    clinic.clinicId,
-      event_type:   'performance_alert',
-      entity_type:  'clinic',
-      entity_id:    clinic.clinicId,
-      status:       'success',
-      payload:      { alerts, fillRate: clinic.fillRate, slaMetRate: clinic.slaMetRate },
-      completed_at: now.toISOString(),
-    }).then(() => {}).catch(() => {})
   }
 
   return NextResponse.json({
-    ok:          true,
-    clinicsChecked: clinics.length,
+    ok:             true,
+    orgsChecked:    orgs.length,
     alertsFired,
-    ranAt:       now.toISOString(),
+    ranAt:          now.toISOString(),
   })
 }

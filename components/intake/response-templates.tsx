@@ -102,7 +102,7 @@ export function ResponseTemplates({
 
       {/* Suggested action */}
       <div className="flex items-start gap-2">
-        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mt-0.5 flex-shrink-0">
+        <span className="text-[10px] font-medium text-slate uppercase tracking-wide mt-0.5 flex-shrink-0">
           Acción sugerida
         </span>
         <span className="text-xs text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
@@ -117,7 +117,7 @@ export function ResponseTemplates({
           className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
             mode === 'templates'
               ? 'bg-gray-900 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-[#F3F6F9] text-slate hover:bg-fog'
           }`}
         >
           Plantillas
@@ -128,7 +128,7 @@ export function ResponseTemplates({
           className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-60 ${
             mode === 'draft'
               ? 'bg-gray-900 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-[#F3F6F9] text-slate hover:bg-fog'
           }`}
         >
           {generating ? 'Generando…' : 'Borrador IA'}
@@ -137,7 +137,7 @@ export function ResponseTemplates({
           <span className="text-xs text-red-500">Error — usa plantilla</span>
         )}
         {profile?.brandTone && mode === 'draft' && (
-          <span className="ml-auto text-[10px] text-gray-400">
+          <span className="ml-auto text-[10px] text-slate">
             Tono: {profile.brandTone}
           </span>
         )}
@@ -153,7 +153,7 @@ export function ResponseTemplates({
               className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${
                 selectedIdx === i
                   ? 'border-brand-400 bg-brand-50 text-brand-700 font-medium'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  : 'border-fog text-slate hover:border-fog'
               }`}
             >
               {t.label}
@@ -167,13 +167,13 @@ export function ResponseTemplates({
         <div className="flex flex-wrap gap-3">
           {allVars.map((v) => (
             <div key={v} className="flex items-center gap-1.5">
-              <span className="text-[10px] font-medium text-gray-400">{VAR_LABELS[v] ?? v}</span>
+              <span className="text-[10px] font-medium text-slate">{VAR_LABELS[v] ?? v}</span>
               <input
                 type="text"
                 placeholder={v === 'nombre' && contactName ? contactName : `Ej: ${v}`}
                 value={vars[v] ?? ''}
                 onChange={(e) => setVars((prev) => ({ ...prev, [v]: e.target.value }))}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1 w-28 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                className="text-xs border border-fog rounded-lg px-2 py-1 w-28 focus:outline-none focus:ring-2 focus:ring-brand-300"
               />
             </div>
           ))}
@@ -194,16 +194,16 @@ export function ResponseTemplates({
           rows={4}
           className={`w-full text-sm rounded-xl p-3 border resize-none focus:outline-none focus:ring-2 focus:ring-brand-300 ${
             mode === 'templates'
-              ? 'bg-gray-50 border-gray-100 text-gray-700 cursor-default'
-              : 'bg-white border-gray-200 text-gray-800'
+              ? 'bg-mist border-fog text-slate cursor-default'
+              : 'bg-white border-fog text-ink'
           }`}
         />
       )}
 
       {/* Signature preview */}
       {previewText && profile?.defaultSignature && (
-        <p className="text-xs text-gray-400">
-          Se agrega al copiar: <span className="italic text-gray-500">{profile.defaultSignature}</span>
+        <p className="text-xs text-slate">
+          Se agrega al copiar: <span className="italic text-slate">{profile.defaultSignature}</span>
         </p>
       )}
 
@@ -217,14 +217,14 @@ export function ResponseTemplates({
             {copied ? '✓ Copiado' : 'Copiar respuesta'}
           </button>
           {mode === 'templates' && tpl?.nextStep && (
-            <p className="text-xs text-gray-400 flex-1 line-clamp-1">
+            <p className="text-xs text-slate flex-1 line-clamp-1">
               Siguiente: {tpl.nextStep}
             </p>
           )}
           {mode === 'draft' && (
             <button
               onClick={() => { setMode('templates'); setDraft('') }}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-xs text-slate hover:text-slate transition-colors"
             >
               Volver a plantillas
             </button>

@@ -24,15 +24,16 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
   const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<PatientFormInput, any, PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
-      full_name:       defaultValues?.full_name ?? '',
-      phone:           defaultValues?.phone ?? '',
-      email:           defaultValues?.email ?? '',
-      dni:             defaultValues?.dni ?? '',
-      status:          (defaultValues?.status as PatientFormValues['status']) ?? 'active',
-      notes:           defaultValues?.notes ?? '',
-      tags:            defaultValues?.tags ?? [],
-      photo_url:       defaultValues?.photo_url ?? '',
-      last_visit_date: defaultValues?.last_visit_date ?? '',
+      full_name:         defaultValues?.full_name ?? '',
+      phone:             defaultValues?.phone ?? '',
+      email:             defaultValues?.email ?? '',
+      dni:               defaultValues?.dni ?? '',
+      status:            (defaultValues?.status as PatientFormValues['status']) ?? 'active',
+      notes:             defaultValues?.notes ?? '',
+      contraindications: (defaultValues as any)?.contraindications ?? '',
+      tags:              defaultValues?.tags ?? [],
+      photo_url:         defaultValues?.photo_url ?? '',
+      last_visit_date:   defaultValues?.last_visit_date ?? '',
     },
   })
 
@@ -74,7 +75,15 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
         </FormField>
 
         <FormField label="Teléfono" error={errors.phone?.message}>
-          <Input {...register('phone')} placeholder="+51 999 000 000" type="tel" />
+          <Input
+            {...register('phone')}
+            placeholder="987654321"
+            type="tel"
+            inputMode="numeric"
+            onInput={(e) => {
+              e.currentTarget.value = e.currentTarget.value.replace(/[^\d+\s\-()]/g, '')
+            }}
+          />
         </FormField>
 
         <FormField label="Email" error={errors.email?.message}>
@@ -116,7 +125,7 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 whitespace-nowrap"
+                  className="px-3 py-2 text-sm rounded-lg border border-fog hover:bg-mist whitespace-nowrap"
                 >
                   + Agregar
                 </button>
@@ -140,6 +149,12 @@ export function PatientForm({ defaultValues, action }: PatientFormProps) {
             </div>
           )}
         />
+      </FormField>
+
+      {/* Contraindications */}
+      <FormField label="Contraindicaciones / Alergias" error={(errors as any).contraindications?.message}
+        hint="Alergias a productos, medicamentos contraindicados, condiciones relevantes">
+        <Textarea {...register('contraindications' as any)} placeholder="Ej: alérgica a lidocaína, no aplicar botox en frente por parálisis previa..." />
       </FormField>
 
       {/* Notes */}

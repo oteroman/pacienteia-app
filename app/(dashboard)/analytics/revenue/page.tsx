@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveClinicId } from '@/lib/tenant/active-clinic'
+import { isFeatureAllowed } from '@/lib/plans/gating'
 import {
   fetchClinicKPIsWithTrend,
   fetchNetworkBenchmarks,
@@ -23,6 +24,33 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
   const clinicId = await getActiveClinicId()
   if (!clinicId) redirect('/clinic-selector')
 
+  const allowed = await isFeatureAllowed(clinicId, 'roi_dashboard')
+  if (!allowed) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-ink">Analytics — Revenue</h1>
+          <p className="text-sm text-slate mt-1">Dashboard ROI en S/ — valor recuperado, no-shows evitados, benchmarks.</p>
+        </div>
+        <div className="rounded-2xl border border-fog bg-white p-10 text-center space-y-4">
+          <p className="text-3xl">🔒</p>
+          <p className="font-semibold text-ink">Disponible en plan Premium</p>
+          <p className="text-sm text-slate max-w-sm mx-auto">
+            El Dashboard ROI en S/ — con el valor exacto que recuperas cada mes — está incluido en el plan Premium.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link href="/pricing" className="inline-block bg-purple-700 hover:bg-purple-800 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+              Ver plan Premium →
+            </Link>
+            <Link href="/analytics" className="text-sm text-slate hover:text-ink underline">
+              Ver métricas básicas
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const period = (['week', 'month', '30d'] as PeriodKey[]).includes(periodParam as PeriodKey)
     ? (periodParam as PeriodKey)
     : '30d'
@@ -39,16 +67,16 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
       {/* Header + period selector */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Revenue & Rendimiento</h1>
-          <p className="text-sm text-gray-500 mt-1">{kpi.period.label} · estimaciones basadas en citas y recuperaciones</p>
+          <h1 className="text-2xl font-bold text-ink">Revenue & Rendimiento</h1>
+          <p className="text-sm text-slate mt-1">{kpi.period.label} · estimaciones basadas en citas y recuperaciones</p>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-[#F3F6F9] rounded-lg p-1">
           {(['week', 'month', '30d'] as PeriodKey[]).map((p) => (
             <Link
               key={p}
               href={`?period=${p}`}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                period === p ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                period === p ? 'bg-white text-ink shadow-xs' : 'text-slate hover:text-slate'
               }`}
             >
               {p === 'week' ? '7 días' : p === 'month' ? 'Este mes' : '30 días'}
@@ -64,9 +92,9 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
           value={kpi.revenueActual}
           sub={`${kpi.apptsCompleted} citas completadas`}
           trend={kpi.trends.revenueActual}
-          color="text-green-700"
-          bg="bg-green-50"
-          border="border-green-200"
+          color="text-lima-700"
+          bg="bg-lima-50"
+          border="border-lima-200"
           isMoney
         />
         <RevenueCard
@@ -101,16 +129,16 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
                 {SIGNAL_META[signal.signal].label}
               </span>
             </div>
-            <p className="text-sm text-gray-700">{SIGNAL_META[signal.signal].description}</p>
+            <p className="text-sm text-slate">{SIGNAL_META[signal.signal].description}</p>
             <div className="flex flex-wrap gap-1 mt-2">
               {signal.reasons.map((r) => (
-                <span key={r} className="text-[10px] px-2 py-0.5 rounded bg-white/60 text-gray-600">{r}</span>
+                <span key={r} className="text-[10px] px-2 py-0.5 rounded bg-white/60 text-slate">{r}</span>
               ))}
             </div>
           </div>
           <div className="flex-shrink-0 space-y-1">
-            <p className="text-[11px] font-semibold text-gray-700">Acción sugerida:</p>
-            <p className="text-[11px] text-gray-600">{signal.playbook[0]?.action}</p>
+            <p className="text-[11px] text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Acción sugerida:</p>
+            <p className="text-[11px] text-slate">{signal.playbook[0]?.action}</p>
           </div>
         </div>
       )}
@@ -119,14 +147,14 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
 
         {/* Appointment funnel */}
         <section className="rounded-2xl border bg-white p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-800">Embudo de citas</h2>
+          <h2 className="text-sm font-semibold text-ink">Embudo de citas</h2>
           <div className="space-y-2">
-            <FunnelRow label="Creadas"     value={kpi.apptsCreated}   total={kpi.apptsCreated} color="bg-gray-200" />
-            <FunnelRow label="Completadas" value={kpi.apptsCompleted} total={kpi.apptsCreated} color="bg-green-400" />
-            <FunnelRow label="Canceladas"  value={kpi.cancellations}  total={kpi.apptsCreated} color="bg-red-400"  />
-            <FunnelRow label="No-shows"    value={kpi.noShows}        total={kpi.apptsCreated} color="bg-orange-400" />
+            <FunnelRow label="Creadas"     value={kpi.apptsCreated}   total={kpi.apptsCreated} color="bg-fog" />
+            <FunnelRow label="Atendidas"     value={kpi.apptsCompleted} total={kpi.apptsCreated} color="bg-green-400" />
+            <FunnelRow label="Canceladas"    value={kpi.cancellations}  total={kpi.apptsCreated} color="bg-red-400"  />
+            <FunnelRow label="Inasistencias" value={kpi.noShows}        total={kpi.apptsCreated} color="bg-orange-400" />
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-slate">
             Tasa de cancelación: <strong>{kpi.cancellationRate}%</strong>
             {' · '}
             Precio promedio: <strong>{fmt(kpi.avgPrice)}</strong>
@@ -135,7 +163,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
 
         {/* Recovery KPIs */}
         <section className="rounded-2xl border bg-white p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-800">Recuperación de slots</h2>
+          <h2 className="text-sm font-semibold text-ink">Recuperación de slots</h2>
           <div className="space-y-3">
             <RateRow
               label="Fill rate (backfill)"
@@ -151,8 +179,8 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
             />
           </div>
 
-          <div className="pt-2 border-t border-gray-50">
-            <h3 className="text-xs font-semibold text-gray-700 mb-3">Intakes & SLA</h3>
+          <div className="pt-2 border-t border-fog">
+            <h3 className="text-xs font-semibold text-slate mb-3">Intakes & SLA</h3>
             <div className="space-y-3">
               <RateRow
                 label="SLA cumplido"
@@ -174,7 +202,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
 
       {/* Benchmark comparison */}
       <section className="rounded-2xl border bg-white p-5">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4">
+        <h2 className="text-sm font-semibold text-ink mb-4">
           Tu clínica vs red anónima
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -195,7 +223,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
             isMoney
           />
         </div>
-        <p className="text-[10px] text-gray-400 mt-3">
+        <p className="text-[10px] text-slate mt-3">
           Red = mediana entre todas las clínicas activas. No se comparte información identificable.
         </p>
       </section>
@@ -217,21 +245,21 @@ function RevenueCard({
   color: string; bg: string; border: string; note?: string; isMoney?: boolean
 }) {
   const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'
-  const trendColor = trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-500' : 'text-gray-400'
+  const trendColor = trend === 'up' ? 'text-lima-600' : trend === 'down' ? 'text-red-500' : 'text-slate'
 
   return (
     <div className={`rounded-2xl border ${border} ${bg} p-5`}>
       <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-gray-600">{label}</p>
+        <p className="text-xs font-medium text-slate">{label}</p>
         <div className="flex items-center gap-1">
-          {note && <span className="text-[9px] text-gray-400">{note}</span>}
+          {note && <span className="text-[9px] text-slate">{note}</span>}
           {trend && <span className={`text-sm font-bold ${trendColor}`}>{trendIcon}</span>}
         </div>
       </div>
       <p className={`text-2xl font-bold tabular-nums mt-2 ${color}`}>
         {isMoney ? fmt(value) : `${value}%`}
       </p>
-      {sub && <p className="text-[11px] text-gray-500 mt-1">{sub}</p>}
+      {sub && <p className="text-[11px] text-slate mt-1">{sub}</p>}
     </div>
   )
 }
@@ -243,10 +271,10 @@ function FunnelRow({
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-gray-600">{label}</span>
-        <span className="font-semibold text-gray-800">{value} <span className="text-gray-400 font-normal">({pct}%)</span></span>
+        <span className="text-slate">{label}</span>
+        <span className="font-semibold text-ink">{value} <span className="text-slate font-normal">({pct}%)</span></span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#F3F6F9] rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -257,30 +285,30 @@ function RateRow({
   label, value, benchmark, trend, detail,
 }: { label: string; value: number; benchmark?: number; trend?: 'up' | 'flat' | 'down'; detail?: string }) {
   const trendIcon  = trend === 'up' ? '↑' : trend === 'down' ? '↓' : null
-  const trendColor = trend === 'up' ? 'text-green-600' : 'text-red-500'
+  const trendColor = trend === 'up' ? 'text-lima-600' : 'text-red-500'
   const bar        = Math.min(value, 100)
 
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-gray-600">{label}</span>
+        <span className="text-slate">{label}</span>
         <div className="flex items-center gap-2">
           {benchmark !== undefined && (
-            <span className="text-gray-400">red {benchmark}%</span>
+            <span className="text-slate">red {benchmark}%</span>
           )}
-          <span className="font-semibold text-gray-800">
+          <span className="font-semibold text-ink">
             {value}%
             {trendIcon && <span className={`ml-1 ${trendColor}`}>{trendIcon}</span>}
           </span>
         </div>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[#F3F6F9] rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${value >= 70 ? 'bg-green-400' : value >= 40 ? 'bg-amber-400' : 'bg-red-400'}`}
           style={{ width: `${bar}%` }}
         />
       </div>
-      {detail && <p className="text-[10px] text-gray-400 mt-0.5">{detail}</p>}
+      {detail && <p className="text-[10px] text-slate mt-0.5">{detail}</p>}
     </div>
   )
 }
@@ -293,19 +321,19 @@ function BenchmarkCard({
   const display = isMoney ? fmt : (n: number) => `${n}%`
 
   return (
-    <div className="rounded-xl border bg-gray-50 p-4 space-y-2">
-      <p className="text-[11px] font-medium text-gray-500">{label}</p>
+    <div className="rounded-xl border bg-mist p-4 space-y-2">
+      <p className="text-[11px] font-medium text-slate">{label}</p>
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-xs text-gray-400">Tu clínica</p>
-          <p className="text-lg font-bold text-gray-900">{display(yours)}</p>
+          <p className="text-xs text-slate">Tu clínica</p>
+          <p className="text-lg font-bold text-ink">{display(yours)}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-400">Red</p>
-          <p className="text-sm font-semibold text-gray-500">{display(network)}</p>
+          <p className="text-xs text-slate">Red</p>
+          <p className="text-sm text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">{display(network)}</p>
         </div>
       </div>
-      <p className={`text-[11px] font-semibold ${ahead ? 'text-green-600' : 'text-red-500'}`}>
+      <p className={`text-[11px] font-semibold ${ahead ? 'text-lima-600' : 'text-red-500'}`}>
         {ahead ? `+${delta}% sobre la red` : `${delta}% bajo la red`}
       </p>
     </div>

@@ -19,14 +19,14 @@ export function ViewToggle({ current }: ViewToggleProps) {
   }
 
   return (
-    <div className="flex items-center rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+    <div className="flex items-center rounded-lg border border-fog p-0.5 bg-mist">
       <button
         onClick={() => setView('table')}
         title="Vista tabla"
         className={`p-1.5 rounded-md transition-colors ${
           current !== 'cards'
-            ? 'bg-white shadow-sm text-gray-700'
-            : 'text-gray-400 hover:text-gray-600'
+            ? 'bg-white shadow-xs text-slate'
+            : 'text-slate hover:text-slate'
         }`}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5}>
@@ -40,8 +40,8 @@ export function ViewToggle({ current }: ViewToggleProps) {
         title="Vista tarjetas"
         className={`p-1.5 rounded-md transition-colors ${
           current === 'cards'
-            ? 'bg-white shadow-sm text-gray-700'
-            : 'text-gray-400 hover:text-gray-600'
+            ? 'bg-white shadow-xs text-slate'
+            : 'text-slate hover:text-slate'
         }`}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5}>

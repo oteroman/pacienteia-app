@@ -147,8 +147,8 @@ export default async function PlatformHealthPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Salud comercial</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Últimos 7 días · todas las clínicas</p>
+          <h1 className="text-2xl font-bold text-ink">Salud comercial</h1>
+          <p className="text-sm text-slate mt-0.5">Últimos 7 días · todas las clínicas</p>
         </div>
       </div>
 
@@ -188,24 +188,24 @@ export default async function PlatformHealthPage() {
       <Section title="Bloqueos por recurso (7d)">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-gray-700">
-              <th className="pb-2 font-medium">Recurso</th>
-              <th className="pb-2 font-medium text-right">Total</th>
-              <th className="pb-2 font-medium text-right">Soft</th>
-              <th className="pb-2 font-medium text-right">Hard</th>
-              <th className="pb-2 font-medium text-right">Modal %</th>
-              <th className="pb-2 font-medium text-right">CTA %</th>
+            <tr className="text-left text-slate border-b border-fog">
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Recurso</th>
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Total</th>
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Soft</th>
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Hard</th>
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Modal %</th>
+              <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">CTA %</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-800">
+          <tbody className="divide-y divide-fog">
             {byResource.map((r) => (
-              <tr key={r.resource} className={r.total === 0 ? 'text-gray-600' : 'text-gray-200'}>
+              <tr key={r.resource} className={r.total === 0 ? 'text-slate' : 'text-slate'}>
                 <td className="py-2.5 capitalize">{r.resource}</td>
                 <td className="py-2.5 text-right font-medium">{r.total}</td>
-                <td className="py-2.5 text-right text-amber-400">{r.soft}</td>
-                <td className="py-2.5 text-right text-red-400">{r.hard}</td>
-                <td className="py-2.5 text-right text-gray-500">{r.modalRate}%</td>
-                <td className={`py-2.5 text-right font-medium ${r.ctaRate >= 20 ? 'text-green-400' : 'text-gray-500'}`}>
+                <td className="py-2.5 text-right text-amber-600">{r.soft}</td>
+                <td className="py-2.5 text-right text-red-600">{r.hard}</td>
+                <td className="py-2.5 text-right text-slate">{r.modalRate}%</td>
+                <td className={`py-2.5 text-right font-medium ${r.ctaRate >= 20 ? 'text-lima-600' : 'text-slate'}`}>
                   {r.ctaRate}%
                 </td>
               </tr>
@@ -221,8 +221,8 @@ export default async function PlatformHealthPage() {
             <ul className="space-y-2">
               {topPages.map(([page, count]) => (
                 <li key={page} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400 font-mono text-xs truncate">{page}</span>
-                  <span className="font-semibold text-gray-200 ml-2 shrink-0">{count}</span>
+                  <span className="text-slate font-mono text-xs truncate">{page}</span>
+                  <span className="font-semibold text-slate ml-2 shrink-0">{count}</span>
                 </li>
               ))}
             </ul>
@@ -235,12 +235,12 @@ export default async function PlatformHealthPage() {
               {topClinics.map(({ id, name, plan, count }) => (
                 <li key={id} className="flex items-center justify-between text-sm">
                   <div className="min-w-0">
-                    <a href={`/platform/tenants/${id}`} className="text-gray-200 font-medium truncate block hover:text-white">
+                    <a href={`/platform/tenants/${id}`} className="text-slate font-medium truncate block hover:text-ink">
                       {name}
                     </a>
-                    <span className="text-xs text-gray-500 capitalize">{plan}</span>
+                    <span className="text-xs text-slate capitalize">{plan}</span>
                   </div>
-                  <span className="font-semibold text-gray-200 ml-2 shrink-0">{count}</span>
+                  <span className="font-semibold text-slate ml-2 shrink-0">{count}</span>
                 </li>
               ))}
             </ul>
@@ -248,65 +248,8 @@ export default async function PlatformHealthPage() {
         </Section>
       </div>
 
-      {/* Upgrade candidates */}
-      <Section title="Candidatos a upgrade">
-        {upgradeCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">Sin cuentas bloqueadas en los últimos 7 días</p>
-        ) : (
-          <div className="overflow-x-auto -mx-2">
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="text-left text-gray-500 border-b border-gray-700">
-                  <th className="pb-2 font-medium pl-2">Clínica</th>
-                  <th className="pb-2 font-medium">Plan</th>
-                  <th className="pb-2 font-medium text-right">7d bloqueos</th>
-                  <th className="pb-2 font-medium text-center">Gate</th>
-                  <th className="pb-2 font-medium text-center">Uso máx.</th>
-                  <th className="pb-2 font-medium text-center">CTA</th>
-                  <th className="pb-2 font-medium">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800">
-                {upgradeCandidates.map((c) => (
-                  <tr key={c.id} className="text-gray-300">
-                    <td className="py-2.5 pl-2">
-                      <a href={`/platform/tenants/${c.id}`} className="font-medium hover:text-white">{c.name}</a>
-                      <div className="text-xs text-gray-600 font-mono">{c.id.slice(0, 8)}</div>
-                    </td>
-                    <td className="py-2.5 capitalize text-gray-400">{c.plan}</td>
-                    <td className="py-2.5 text-right font-bold text-white">{c.blocks7d}</td>
-                    <td className="py-2.5 text-center">
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                        c.gate === 'hard' ? 'bg-red-900 text-red-300' : 'bg-amber-900 text-amber-300'
-                      }`}>
-                        {c.gate}
-                      </span>
-                    </td>
-                    <td className="py-2.5 text-center">
-                      {c.maxPct > 0 ? (
-                        <span className={`text-xs font-medium ${
-                          c.maxPct >= 100 ? 'text-red-400' : c.maxPct >= 80 ? 'text-amber-400' : 'text-gray-500'
-                        }`}>{c.maxPct}%</span>
-                      ) : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="py-2.5 text-center">
-                      {c.hasCta
-                        ? <span className="text-green-400 font-medium">✓</span>
-                        : <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="py-2.5">
-                      <RecomBadge r={c.recommendation} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Section>
-
       {events.length === 0 && (
-        <div className="text-center py-16 text-gray-600 text-sm">
+        <div className="text-center py-16 text-slate text-sm">
           Sin eventos de fricción en los últimos 7 días.
         </div>
       )}
@@ -318,41 +261,41 @@ function Metric({ label, value, sub, highlight, warn, danger }: {
   label: string; value: number; sub?: string
   highlight?: boolean; warn?: boolean; danger?: boolean
 }) {
-  const bg = danger    ? 'bg-red-950 border border-red-900'
-           : warn      ? 'bg-amber-950 border border-amber-900'
-           : highlight ? 'bg-gray-800 border border-gray-700'
-                       : 'bg-gray-800 border border-gray-800'
-  const valCls = danger    ? 'text-red-400'
-               : warn      ? 'text-amber-400'
-               : highlight ? 'text-white'
-                           : 'text-gray-200'
+  const bg = danger    ? 'bg-red-50 border border-red-200'
+           : warn      ? 'bg-amber-50 border border-amber-200'
+           : highlight ? 'bg-mist border border-fog'
+                       : 'bg-mist border border-fog'
+  const valCls = danger    ? 'text-red-600'
+               : warn      ? 'text-amber-600'
+               : highlight ? 'text-ink'
+                           : 'text-slate'
   return (
     <div className={`rounded-xl p-4 text-center space-y-1 ${bg}`}>
       <p className={`text-2xl font-bold tabular-nums ${valCls}`}>{value}</p>
-      <p className="text-xs text-gray-500 leading-tight">{label}</p>
-      {sub && <p className="text-xs text-gray-600">{sub}</p>}
+      <p className="text-xs text-slate leading-tight">{label}</p>
+      {sub && <p className="text-xs text-slate">{sub}</p>}
     </div>
   )
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 space-y-4">
-      <h2 className="text-sm font-semibold text-gray-300">{title}</h2>
+    <div className="bg-white rounded-xl border border-fog p-6 space-y-4">
+      <h2 className="text-sm font-semibold text-slate">{title}</h2>
       {children}
     </div>
   )
 }
 
 function Empty() {
-  return <p className="text-sm text-gray-500 text-center py-4">Sin datos</p>
+  return <p className="text-sm text-slate text-center py-4">Sin datos</p>
 }
 
 function Alert({ level, message }: { level: 'danger' | 'warn' | 'info'; message: string }) {
   const cls = {
-    danger: 'bg-red-950 border-red-900 text-red-300',
-    warn:   'bg-amber-950 border-amber-900 text-amber-300',
-    info:   'bg-blue-950 border-blue-900 text-blue-300',
+    danger: 'bg-red-50 border-red-200 text-red-700',
+    warn:   'bg-amber-50 border-amber-200 text-amber-700',
+    info:   'bg-brand-50 border-brand-200 text-brand-700',
   }[level]
   const icon = { danger: '●', warn: '●', info: 'i' }[level]
   return (
@@ -365,11 +308,11 @@ function Alert({ level, message }: { level: 'danger' | 'warn' | 'info'; message:
 
 function RecomBadge({ r }: { r: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    upgrade_now:     { label: 'Upgrade ya',      cls: 'bg-red-900 text-red-300' },
-    follow_up:       { label: 'Follow-up',       cls: 'bg-green-900 text-green-300' },
-    mostrar_precios: { label: 'Mostrar precios', cls: 'bg-blue-900 text-blue-300' },
+    upgrade_now:     { label: 'Upgrade ya',      cls: 'bg-red-50 text-red-700' },
+    follow_up:       { label: 'Follow-up',       cls: 'bg-green-50 text-green-700' },
+    mostrar_precios: { label: 'Mostrar precios', cls: 'bg-brand-50 text-brand-700' },
   }
-  const { label, cls } = map[r] ?? { label: r, cls: 'bg-gray-800 text-gray-400' }
+  const { label, cls } = map[r] ?? { label: r, cls: 'bg-mist text-slate' }
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${cls}`}>{label}</span>
   )

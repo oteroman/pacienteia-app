@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
     .eq('organization_id', clinic_id).is('deleted_at', null)
     .order('created_at', { ascending: true }).limit(1).single()
 
+  if (!branch) {
+    return NextResponse.json({ error: 'branch_not_configured' }, { status: 422 })
+  }
+
   // Deduplicate by external_id
   if (typeof lead_id === 'string') {
     const { data: existing } = await sb

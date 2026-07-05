@@ -1,6 +1,55 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(vercel logs *)",
+      "Bash(node -e ' *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vercel *)",
+      "Bash(curl -s -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows?limit=20)",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -H \"X-N8N-API-KEY: <N8N_API_KEY_ROTAR>\" \"https://automatizacion.pacienteia.com/api/v1/workflows?limit=20\")",
+      "Bash(curl -s -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows?limit=50)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows/Yp1PyCvHvMBuzySR)",
+      "Bash(curl -s -X POST -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/workflows -d '{ *)",
+      "Bash(curl -s -X POST -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows/oIS3DlT7mDcFYvyo/activate)",
+      "Bash(curl -s -X PATCH -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/workflows/oIS3DlT7mDcFYvyo -d '{\"active\": true}')",
+      "Bash(curl -s -X DELETE -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows/oIS3DlT7mDcFYvyo)",
+      "Bash(curl -s -X POST -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/workflows/Yp1PyCvHvMBuzySR/run -d '{}')",
+      "Bash(curl -s -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' 'https://automatizacion.pacienteia.com/api/v1/executions?workflowId=Yp1PyCvHvMBuzySR&limit=3')",
+      "Bash(curl -s -X PUT -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/workflows/Yp1PyCvHvMBuzySR -d '{ *)",
+      "Bash(curl -s -X PUT -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/workflows/oIS3DlT7mDcFYvyo -d '{ *)",
+      "Bash(curl -s -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' https://automatizacion.pacienteia.com/api/v1/workflows/oIS3DlT7mDcFYvyo)",
+      "Read(//c/Users/mikeg/.local/share/com.vercel.cli/**)",
+      "Read(//c/Users/mikeg/.config/com.vercel.cli/**)",
+      "Read(//c/Users/mikeg/**)",
+      "Bash(curl -s 'https://api.vercel.com/v9/projects/prj_d3qoLAl6lifNZ7P1wG3rts7N52Tg/env?teamId=team_m8pw9leDCaopwfRtdIRsjbz7&decrypt=true' -H 'Authorization: Bearer vca_76djFgVs401ZcLoDB62qOClTBwNyT16vTscm7bZGf0chkVrUPp0NoXvU')",
+      "Bash(curl -s https://api.vercel.com/v9/projects/prj_d3qoLAl6lifNZ7P1wG3rts7N52Tg/env?teamId=team_m8pw9leDCaopwfRtdIRsjbz7 -H 'Authorization: Bearer vca_76djFgVs401ZcLoDB62qOClTBwNyT16vTscm7bZGf0chkVrUPp0NoXvU')",
+      "Bash(openssl rand *)",
+      "Bash(curl -s -X PATCH https://api.vercel.com/v9/projects/prj_d3qoLAl6lifNZ7P1wG3rts7N52Tg/env/8fqTyA9YiDQsrToW?teamId=team_m8pw9leDCaopwfRtdIRsjbz7 -H 'Authorization: Bearer vca_76djFgVs401ZcLoDB62qOClTBwNyT16vTscm7bZGf0chkVrUPp0NoXvU' -H 'Content-Type: application/json' -d '{\"value\":\"__TRACKED_VAR__\",\"type\":\"encrypted\"}')",
+      "Bash(curl -s -X PATCH https://api.vercel.com/v9/projects/prj_d3qoLAl6lifNZ7P1wG3rts7N52Tg/env/8fqTyA9YiDQsrToW?teamId=team_m8pw9leDCaopwfRtdIRsjbz7 -H 'Authorization: Bearer vca_76djFgVs401ZcLoDB62qOClTBwNyT16vTscm7bZGf0chkVrUPp0NoXvU' -H 'Content-Type: application/json' -d '{\"value\":\"33f35fbd2d18c03e8e998ee5a4231f7661d201f0a15784fa\",\"type\":\"sensitive\",\"target\":[\"production\",\"preview\"]}')",
+      "Bash(curl -s -X PUT -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/credentials/MbZeU9jI5XrO66yh -d '{ *)",
+      "Bash(curl -s -X PUT -H 'X-N8N-API-KEY: <N8N_API_KEY_ROTAR>' -H 'Content-Type: application/json' https://automatizacion.pacienteia.com/api/v1/credentials/MbZeU9jI5XrO66yh -d '{\"name\":\"PacienteIA Webhook Secret\",\"type\":\"httpHeaderAuth\",\"data\":{\"name\":\"Authorization\",\"value\":\"Bearer 33f35fbd2d18c03e8e998ee5a4231f7661d201f0a15784fa\"}}')",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -X POST -H 'Authorization: Bearer 33f35fbd2d18c03e8e998ee5a4231f7661d201f0a15784fa' -H 'Content-Type: application/json' https://app.pacienteia.com/api/internal/appointment-reminders -d '{\"clinic_id\":\"860dee6e-612e-4673-87cc-1ccefd602f46\",\"branch_id\":\"1e51d833-00b4-4233-acbb-44a55b0f62a1\",\"type\":\"24h\"}')",
+      "Bash(curl -s https://api.vercel.com/v9/projects/pacienteia-app/env?teamId=illari-labs -H 'Authorization: Bearer vca_76djFgVs401ZcLoDB62qOClTBwNyT16vTscm7bZGf0chkVrUPp0NoXvU')",
+      "Bash(curl -s -X POST -H 'Authorization: Bearer <CRON_SECRET_ROTAR>' -H 'Content-Type: application/json' https://app.pacienteia.com/api/internal/appointment-reminders -d '{\"clinic_id\":\"860dee6e-612e-4673-87cc-1ccefd602f46\",\"branch_id\":\"1e51d833-00b4-4233-acbb-44a55b0f62a1\",\"type\":\"24h\"}')",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\ClaudeCode\\\\PacienteIA\" -Recurse -Directory | Where-Object {$_.FullName -match '\\(analytics|migrations\\)$'} | Select-Object FullName)",
+      "Bash(npx next *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl -s \"https://api.github.com/repos/obra/superpowers/contents/\")",
+      "Bash(python3 -c \"import sys,json; [print\\(f['type'], f['name']\\) for f in json.load\\(sys.stdin\\)]\")",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.claude\" -ErrorAction SilentlyContinue | Select-Object PSIsContainer, Name)",
+      "PowerShell(Test-Path \"$env:USERPROFILE\\\\.claude\"; Get-ChildItem \"$env:USERPROFILE\\\\.claude\" -Force -ErrorAction SilentlyContinue | Select-Object Name, Attributes)",
+      "PowerShell(Get-ChildItem \"$env:USERPROFILE\\\\.claude\" -Force | Select-Object Name, Attributes | Format-Table -AutoSize)",
+      "PowerShell(Test-Path \"$env:USERPROFILE\\\\.claude\\\\plugins\\\\superpowers\\\\skills\")"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }

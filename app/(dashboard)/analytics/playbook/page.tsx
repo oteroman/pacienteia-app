@@ -46,8 +46,8 @@ export default async function PlaybookPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Playbook operativo</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-ink">Playbook operativo</h1>
+          <p className="text-sm text-slate mt-1">
             {openTasks.length} abierta{openTasks.length !== 1 ? 's' : ''}
             {aged.length > 0 && <> · <span className="text-amber-600">{aged.length} envejecida{aged.length !== 1 ? 's' : ''}</span></>}
             {escalated.length > 0 && <> · <span className="text-red-600">{escalated.length} escalada{escalated.length !== 1 ? 's' : ''}</span></>}
@@ -56,15 +56,15 @@ export default async function PlaybookPage({
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href={`/analytics/health?key=${key}`}
-            className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+            className="text-xs text-slate hover:text-slate underline underline-offset-2"
           >
             ← Health scores
           </Link>
-          <span className="text-gray-200">·</span>
+          <span className="text-fog">·</span>
           <form action={triggerAutomation}>
             <button
               type="submit"
-              className="text-xs font-medium text-gray-500 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2.5 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-medium text-slate hover:text-ink bg-[#F3F6F9] hover:bg-fog px-2.5 py-1.5 rounded-lg transition-colors"
             >
               ↻ Sync ahora
             </button>
@@ -85,7 +85,7 @@ export default async function PlaybookPage({
             className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
               filter === value
                 ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                : 'bg-[#F3F6F9] text-slate hover:bg-fog'
             }`}
           >
             {label}
@@ -123,7 +123,7 @@ export default async function PlaybookPage({
       {visible.length === 0 && (
         <div className="text-center py-16 space-y-2">
           <p className="text-4xl">✅</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate">
             {filter === 'all' ? 'Sin tareas abiertas.' : `Sin tareas en esta vista.`}
           </p>
         </div>
@@ -131,15 +131,15 @@ export default async function PlaybookPage({
 
       {/* Recently resolved */}
       {recentlyResolved.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-500">Últimas resueltas / pospuestas</h2>
-          <ul className="divide-y divide-gray-50">
+        <div className="bg-white rounded-2xl border border-fog shadow-xs p-6 space-y-3">
+          <h2 className="text-sm text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Últimas resueltas / pospuestas</h2>
+          <ul className="divide-y divide-fog">
             {recentlyResolved.map((task) => (
               <li key={task.id} className="py-2.5 flex items-center justify-between gap-4 text-sm">
                 <div className="flex items-center gap-2 min-w-0">
                   <StatusDot status={task.status} />
-                  <span className="text-gray-600 truncate">{task.title}</span>
-                  <span className="text-xs text-gray-400 shrink-0">{task.clinicName}</span>
+                  <span className="text-slate truncate">{task.title}</span>
+                  <span className="text-xs text-slate shrink-0">{task.clinicName}</span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {task.status === 'snoozed' && task.snoozedUntil && (
@@ -167,8 +167,8 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
   const isOld   = hours >= 72
 
   return (
-    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden ${
-      task.escalatedAt ? 'border-red-200' : isAged ? 'border-amber-200' : 'border-gray-100'
+    <div className={`bg-white rounded-xl border shadow-xs overflow-hidden ${
+      task.escalatedAt ? 'border-red-200' : isAged ? 'border-amber-200' : 'border-fog'
     }`}>
 
       {/* Top */}
@@ -176,17 +176,17 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
         <div className="space-y-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <PriorityDot priority={task.priority} />
-            <span className="font-semibold text-gray-900 text-sm">{task.title}</span>
+            <span className="font-semibold text-ink text-sm">{task.title}</span>
             <AlertChip trigger={task.triggerType} />
-            <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">SLA {sla}</span>
+            <span className="text-xs text-slate bg-mist px-1.5 py-0.5 rounded">SLA {sla}</span>
             {task.escalatedAt && (
               <span className="text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-medium">↑ auto-escalada</span>
             )}
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-slate">
             <Link
               href={`/analytics/health?key=${queryKey}`}
-              className="font-medium text-gray-700 hover:underline"
+              className="font-medium text-slate hover:underline"
             >
               {task.clinicName}
             </Link>
@@ -206,10 +206,10 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
 
       {/* Body */}
       <div className="px-5 pb-4 space-y-3">
-        <p className="text-sm text-gray-600">{task.description}</p>
+        <p className="text-sm text-slate">{task.description}</p>
         <div className="flex items-start gap-2">
           <span className="text-brand-600 font-semibold text-sm mt-0.5 shrink-0">→</span>
-          <p className="text-sm text-gray-800 font-medium">{task.actionText}</p>
+          <p className="text-sm text-ink font-medium">{task.actionText}</p>
         </div>
 
         {task.lastNote && (
@@ -220,12 +220,12 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
 
         {task.messageTemplate && (
           <details className="group">
-            <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 select-none list-none flex items-center gap-1">
+            <summary className="cursor-pointer text-xs text-slate hover:text-slate select-none list-none flex items-center gap-1">
               <span className="group-open:hidden">▶</span>
               <span className="hidden group-open:inline">▼</span>
               Plantilla de mensaje
             </summary>
-            <div className="mt-2 bg-gray-50 border border-gray-100 rounded-lg p-3 text-xs text-gray-600 leading-relaxed select-all whitespace-pre-wrap font-mono">
+            <div className="mt-2 bg-mist border border-fog rounded-lg p-3 text-xs text-slate leading-relaxed select-all whitespace-pre-wrap font-mono">
               {task.messageTemplate}
             </div>
           </details>
@@ -237,12 +237,12 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
             name="note"
             type="text"
             placeholder="Añadir nota de seguimiento…"
-            className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 bg-white"
+            className="flex-1 text-xs border border-fog rounded-lg px-3 py-2 focus:outline-none focus:border-brand-400 bg-white"
             maxLength={300}
           />
           <button
             type="submit"
-            className="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition-colors shrink-0"
+            className="text-xs font-medium text-slate hover:text-ink bg-[#F3F6F9] hover:bg-fog px-3 py-2 rounded-lg transition-colors shrink-0"
           >
             Guardar
           </button>
@@ -250,21 +250,21 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 px-5 py-3 border-t border-gray-50 bg-gray-50/50">
+      <div className="flex items-center gap-3 px-5 py-3 border-t border-fog bg-mist/50">
         <form action={resolveTask.bind(null, task.id)}>
-          <button type="submit" className="text-sm font-medium text-green-700 hover:text-green-800 transition-colors">
+          <button type="submit" className="text-sm font-medium text-lima-700 hover:text-lima-700 transition-colors">
             ✓ Marcar hecho
           </button>
         </form>
-        <span className="text-gray-200">·</span>
+        <span className="text-fog">·</span>
         <form action={snoozeTask.bind(null, task.id, 3)}>
-          <button type="submit" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <button type="submit" className="text-sm text-slate hover:text-slate transition-colors">
             Posponer 3d
           </button>
         </form>
-        <span className="text-gray-200">·</span>
+        <span className="text-fog">·</span>
         <form action={snoozeTask.bind(null, task.id, 7)}>
-          <button type="submit" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+          <button type="submit" className="text-sm text-slate hover:text-slate transition-colors">
             Posponer 7d
           </button>
         </form>
@@ -276,28 +276,28 @@ function TaskCard({ task, queryKey }: { task: ClinicTask; queryKey: string }) {
 // ── Playbook reference ────────────────────────────────────────
 function PlaybookReference() {
   return (
-    <details className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <summary className="px-6 py-4 cursor-pointer text-sm font-semibold text-gray-500 hover:text-gray-700 select-none list-none">
+    <details className="bg-white rounded-2xl border border-fog shadow-xs overflow-hidden">
+      <summary className="px-6 py-4 cursor-pointer text-sm font-semibold text-slate hover:text-slate select-none list-none">
         📋 Referencia de playbooks y reglas de automatización
       </summary>
-      <div className="px-6 pb-5 space-y-1 border-t border-gray-50 pt-4">
-        <div className="grid grid-cols-2 gap-x-6 text-xs text-gray-500 mb-4">
+      <div className="px-6 pb-5 space-y-1 border-t border-fog pt-4">
+        <div className="grid grid-cols-2 gap-x-6 text-xs text-slate mb-4">
           <div>⏰ Reminder logged: &gt;24h abierta (una vez)</div>
           <div>🔺 Escala a high: &gt;72h en medium (una vez)</div>
           <div>♻️ Reabre snooze: cuando vence snoozed_until</div>
           <div>🔄 Sync: al cargar o con "↻ Sync ahora"</div>
         </div>
         {(Object.entries(PLAYBOOKS) as [AlertType, typeof PLAYBOOKS[AlertType]][]).map(([key, pb]) => (
-          <div key={key} className="pt-3 space-y-0.5 border-t border-gray-50 first:border-0 first:pt-0">
+          <div key={key} className="pt-3 space-y-0.5 border-t border-fog first:border-0 first:pt-0">
             <div className="flex items-center gap-2">
               <AlertChip trigger={key} />
-              <span className="text-sm font-semibold text-gray-800">{pb.title}</span>
+              <span className="text-sm font-semibold text-ink">{pb.title}</span>
               <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                 pb.priority === 'high' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
               }`}>{pb.priority} · {pb.sla}</span>
             </div>
-            <p className="text-xs text-gray-500 pl-1">{pb.description}</p>
-            <p className="text-xs text-gray-700 pl-1">→ {pb.action}</p>
+            <p className="text-xs text-slate pl-1">{pb.description}</p>
+            <p className="text-xs text-slate pl-1">→ {pb.action}</p>
           </div>
         ))}
       </div>
@@ -323,7 +323,7 @@ function TaskSection({ title, color, children }: {
 }
 
 function AgeBadge({ hours }: { hours: number }) {
-  if (hours < 24)  return <span className="text-xs text-gray-300">{hours}h</span>
+  if (hours < 24)  return <span className="text-xs text-fog">{hours}h</span>
   const days = Math.floor(hours / 24)
   const cls  = hours >= 72 ? 'text-red-600 font-medium' : 'text-amber-600'
   return <span className={`text-xs ${cls}`}>{days}d{hours >= 72 ? ' ⚠️' : ''}</span>
@@ -337,18 +337,18 @@ function PriorityDot({ priority }: { priority: string }) {
 function AlertChip({ trigger }: { trigger: AlertType }) {
   const map: Record<AlertType, { label: string; cls: string }> = {
     at_risk:       { label: 'at_risk',       cls: 'bg-red-50 text-red-600' },
-    churned:       { label: 'churned',       cls: 'bg-gray-100 text-gray-500' },
-    upgrade_ready: { label: 'upgrade_ready', cls: 'bg-green-50 text-green-700' },
+    churned:       { label: 'churned',       cls: 'bg-[#F3F6F9] text-slate' },
+    upgrade_ready: { label: 'upgrade_ready', cls: 'bg-lima-50 text-lima-700' },
     high_friction: { label: 'high_friction', cls: 'bg-orange-50 text-orange-700' },
     declining:     { label: 'declining',     cls: 'bg-red-50 text-red-600' },
-    inactive:      { label: 'inactive',      cls: 'bg-gray-100 text-gray-500' },
+    inactive:      { label: 'inactive',      cls: 'bg-[#F3F6F9] text-slate' },
   }
   const { label, cls } = map[trigger]
   return <span className={`text-xs px-1.5 py-0.5 rounded font-mono ${cls}`}>{label}</span>
 }
 
 function PlanText({ plan }: { plan: string }) {
-  const cls = plan === 'premium' ? 'text-purple-600' : plan === 'pro' ? 'text-blue-600' : 'text-gray-500'
+  const cls = plan === 'premium' ? 'text-ai-500' : plan === 'pro' ? 'text-blue-600' : 'text-slate'
   return <span className={`capitalize ${cls}`}>{plan}</span>
 }
 
@@ -358,13 +358,13 @@ function StatusDot({ status }: { status: string }) {
 }
 
 function ResolvedBadge({ status }: { status: string }) {
-  if (status === 'done')    return <span className="text-xs text-green-600 font-medium">hecho</span>
+  if (status === 'done')    return <span className="text-xs text-lima-600 font-medium">hecho</span>
   if (status === 'snoozed') return <span className="text-xs text-amber-600 font-medium">pospuesto</span>
   return null
 }
 
 function scoreColor(score: number) {
-  return score >= 70 ? 'text-green-600 font-medium' : score >= 45 ? 'text-amber-600 font-medium' : 'text-red-600 font-medium'
+  return score >= 70 ? 'text-lima-600 font-medium' : score >= 45 ? 'text-amber-600 font-medium' : 'text-red-600 font-medium'
 }
 
 function fmtDate(iso: string) {

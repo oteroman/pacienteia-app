@@ -34,70 +34,61 @@ export async function GET(req: NextRequest) {
   // ── 1. Escalate overdue SLAs ──────────────────────────────
   const { data: overdueSla } = await sb
     .from('intakes')
-    .select('id, clinic_id, contact_name, normalized_summary, escalation_level')
-    .in('status', ['new', 'in_progress', 'waiting_staff'])
+    .select('id, organization_id, contact_name, normalized_summary, escalation_level')
+    .in('status', ['new', 'in_progress'])
     .lt('sla_due_at', now)
     .eq('escalation_level', 0)
     .limit(50)
 
   let escalated = 0
   for (const intake of (overdueSla ?? [])) {
-    // Escalate
     await sb.from('intakes').update({
       escalation_level: 1,
       priority:         'high',
     }).eq('id', intake.id)
 
-    // Create a copilot task so the escalation is visible in the operations panel
     const summary = intake.normalized_summary ?? `Intake sin respuesta — ${intake.contact_name ?? 'contacto desconocido'}`
-    const { data: interaction } = await sb.from('interactions').insert({
-      clinic_id:   intake.clinic_id,
-      source_type: 'staff_note',
-      raw_content: `[ESCALADO] SLA vencido para intake ${intake.id}. ${summary}`,
-      status:      'done',
-    }).select('id').single()
 
-    if (interaction) {
-      await sb.from('copilot_tasks').insert({
-        interaction_id: interaction.id,
-        clinic_id:      intake.clinic_id,
-        patient_id:     null,
-        title:          `ESCALADO: responder a ${intake.contact_name ?? 'contacto'} — SLA vencido`,
-        description:    summary,
-        priority:       'high',
-      })
-    }
+    await sb.from('copilot_tasks').insert({
+      organization_id: intake.organization_id,
+      patient_id:      null,
+      title:           `ESCALADO: responder a ${intake.contact_name ?? 'contacto'} — SLA vencido`,
+      description:     summary,
+      priority:        'high',
+      status:          'open',
+      source:          'sla_breach',
+    })
 
-    // Audit log
     await sb.from('intake_events').insert({
-      intake_id:  intake.id,
-      clinic_id:  intake.clinic_id,
-      event_type: 'escalated',
-      actor:      'system',
-      details:    { escalation_level: 1, reason: 'sla_breach' },
+      intake_id:       intake.id,
+      organization_id: intake.organization_id,
+      event_type:      'escalated',
+      actor:           'system',
+      details:         { escalation_level: 1, reason: 'sla_breach' },
     }).then(() => {}).catch(() => {})
 
     escalated++
   }
 
-  // ── 2. Follow-up overdue → waiting_staff ─────────────────
+  // ── 2. Follow-up overdue → in_progress ───────────────────
   const { data: overdueFollowup } = await sb
     .from('intakes')
-    .select('id, clinic_id')
-    .eq('status', 'waiting_customer')
+    .select('id, organization_id')
+    .eq('status', 'in_progress')
     .lt('follow_up_due_at', now)
     .limit(100)
 
   const followedUp = overdueFollowup?.length ?? 0
   if (followedUp > 0) {
     const ids = (overdueFollowup ?? []).map((r: { id: string }) => r.id)
-    await sb.from('intakes').update({ status: 'waiting_staff' }).in('id', ids)
+    await sb.from('intakes').update({ priority: 'high' }).in('id', ids)
 
-    // Batch audit log
-    const eventRows = (overdueFollowup ?? []).map((r: { id: string; clinic_id: string }) => ({
-      intake_id: r.id, clinic_id: r.clinic_id,
-      event_type: 'followup_triggered', actor: 'system',
-      details: { reason: 'follow_up_due_expired' },
+    const eventRows = (overdueFollowup ?? []).map((r: { id: string; organization_id: string }) => ({
+      intake_id:       r.id,
+      organization_id: r.organization_id,
+      event_type:      'followup_triggered',
+      actor:           'system',
+      details:         { reason: 'follow_up_due_expired' },
     }))
     if (eventRows.length > 0) {
       await sb.from('intake_events').insert(eventRows).then(() => {}).catch(() => {})

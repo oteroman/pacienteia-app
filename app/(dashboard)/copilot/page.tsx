@@ -16,7 +16,7 @@ const PRIORITY_LABEL: Record<CopilotTaskPriority, string> = {
 const PRIORITY_COLOR: Record<CopilotTaskPriority, string> = {
   high:   'bg-red-100 text-red-700',
   medium: 'bg-amber-100 text-amber-700',
-  low:    'bg-gray-100 text-gray-600',
+  low:    'bg-[#F3F6F9] text-slate',
 }
 
 export default async function CopilotPage({
@@ -40,7 +40,7 @@ export default async function CopilotPage({
 
       {/* Success banner */}
       {params.analizado === '1' && (
-        <div className="rounded-xl bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+        <div className="rounded-xl bg-lima-50 border border-lima-200 p-4 text-sm text-lima-700">
           {tareasCount > 0
             ? `Interacción analizada. Se generaron ${tareasCount} tarea${tareasCount > 1 ? 's' : ''} nuevas.`
             : 'Interacción analizada. No se detectaron tareas pendientes.'}
@@ -50,8 +50,8 @@ export default async function CopilotPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Copiloto Operativo</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-ink">Copiloto Operativo</h1>
+          <p className="text-sm text-slate mt-1">
             Registra notas de WhatsApp, llamadas o staff — el copiloto extrae tareas automáticamente
           </p>
         </div>
@@ -66,7 +66,7 @@ export default async function CopilotPage({
       {/* Open tasks */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-800">
+          <h2 className="text-base font-semibold text-ink">
             Tareas abiertas
             {openTasks.length > 0 && (
               <span className="ml-2 text-xs font-normal bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
@@ -77,8 +77,8 @@ export default async function CopilotPage({
         </div>
 
         {openTasks.length === 0 ? (
-          <div className="rounded-2xl border bg-gray-50 p-8 text-center">
-            <p className="text-sm text-gray-400">No hay tareas abiertas. Bien hecho.</p>
+          <div className="rounded-2xl border bg-mist p-8 text-center">
+            <p className="text-sm text-slate">No hay tareas abiertas. Bien hecho.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -94,12 +94,12 @@ export default async function CopilotPage({
         <section>
           <details className="group">
             <summary className="flex items-center gap-2 cursor-pointer list-none select-none mb-3">
-              <span className="text-base font-semibold text-gray-800">Completadas e ignoradas</span>
-              <span className="text-xs font-normal bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              <span className="text-base font-semibold text-ink">Completadas e ignoradas</span>
+              <span className="text-xs font-normal bg-[#F3F6F9] text-slate px-2 py-0.5 rounded-full">
                 {doneTasks.length}
               </span>
-              <span className="ml-auto text-xs text-gray-400 group-open:hidden">Ver historial ▾</span>
-              <span className="ml-auto text-xs text-gray-400 hidden group-open:inline">Ocultar ▴</span>
+              <span className="ml-auto text-xs text-slate group-open:hidden">Ver historial ▾</span>
+              <span className="ml-auto text-xs text-slate hidden group-open:inline">Ocultar ▴</span>
             </summary>
 
             <div className="space-y-2">
@@ -129,18 +129,18 @@ function TaskCard({ task }: { task: CopilotTask }) {
             {PRIORITY_LABEL[task.priority]}
           </span>
           {task.patientName && (
-            <span className="text-xs text-gray-400">{task.patientName}</span>
+            <span className="text-xs text-slate">{task.patientName}</span>
           )}
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${SOURCE_COLORS[task.sourceType]}`}>
             {SOURCE_LABELS[task.sourceType]}
           </span>
         </div>
         <Link href={`/copilot/tasks/${task.id}`} className="block group mt-1">
-          <p className="text-sm font-semibold text-gray-800 group-hover:text-brand-600 transition-colors">
+          <p className="text-sm font-semibold text-ink group-hover:text-brand-600 transition-colors">
             {task.title}
           </p>
           {task.description && (
-            <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{task.description}</p>
+            <p className="text-xs text-slate mt-0.5 line-clamp-2">{task.description}</p>
           )}
         </Link>
       </div>
@@ -154,7 +154,7 @@ function TaskCard({ task }: { task: CopilotTask }) {
         <form action={resolveWithId}>
           <button
             type="submit"
-            className="text-xs text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
+            className="text-xs text-lima-700 bg-lima-50 hover:bg-lima-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
           >
             Listo
           </button>
@@ -162,7 +162,7 @@ function TaskCard({ task }: { task: CopilotTask }) {
         <form action={dismissWithId}>
           <button
             type="submit"
-            className="text-xs text-gray-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
+            className="text-xs text-slate bg-mist hover:bg-mist px-3 py-1.5 rounded-lg font-medium transition-colors"
           >
             Ignorar
           </button>
@@ -180,34 +180,34 @@ function DoneTaskCard({ task }: { task: CopilotTask }) {
     : null
 
   return (
-    <div className="rounded-xl border bg-gray-50 p-4 flex items-start gap-4 opacity-75">
+    <div className="rounded-xl border bg-mist p-4 flex items-start gap-4 opacity-75">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           {task.status === 'done' ? (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-lima-100 text-lima-700">
               Lista
             </span>
           ) : (
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-200 text-gray-500">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F3F4F6] text-slate">
               Ignorada
             </span>
           )}
           {task.patientName && (
-            <span className="text-xs text-gray-400">{task.patientName}</span>
+            <span className="text-xs text-slate">{task.patientName}</span>
           )}
           {resolvedAt && (
-            <span className="ml-auto text-[10px] text-gray-400">{resolvedAt}</span>
+            <span className="ml-auto text-[10px] text-slate">{resolvedAt}</span>
           )}
         </div>
         <Link href={`/copilot/tasks/${task.id}`} className="block group mt-1">
-          <p className="text-sm font-medium text-gray-500 line-through group-hover:no-underline group-hover:text-brand-600 transition-colors">
+          <p className="text-sm font-medium text-slate line-through group-hover:no-underline group-hover:text-brand-600 transition-colors">
             {task.title}
           </p>
         </Link>
       </div>
       <Link
         href={`/copilot/tasks/${task.id}`}
-        className="text-xs text-gray-400 bg-white hover:bg-gray-100 border px-3 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0"
+        className="text-xs text-slate bg-white hover:bg-mist border px-3 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0"
       >
         Ver
       </Link>

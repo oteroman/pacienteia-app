@@ -31,9 +31,9 @@ export default function AppointmentNotesEditor({ appointmentId, initialNotes }: 
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-xs text-gray-400">Notas de la cita</p>
+        <p className="text-xs text-slate">Notas de la cita</p>
         {state?.ok && (
-          <span className="text-xs text-green-600 font-medium">Guardado</span>
+          <span className="text-xs text-lima-600 font-medium">Guardado</span>
         )}
         {state?.error && (
           <span className="text-xs text-red-500">{state.error}</span>
@@ -47,7 +47,7 @@ export default function AppointmentNotesEditor({ appointmentId, initialNotes }: 
           onInput={handleInput}
           rows={3}
           placeholder="Agrega notas sobre el tratamiento, observaciones post-cita, indicaciones dadas al paciente..."
-          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none leading-relaxed"
+          className="w-full border border-fog rounded-xl px-4 py-3 text-sm text-slate placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none leading-relaxed"
         />
         <div className="flex justify-end">
           <button

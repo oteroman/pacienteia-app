@@ -1,0 +1,279 @@
+RESUMEN DE Requerimientos
+
+Archivo revisado: pacienteia_funcionalidades_clinica.txt
+Objetivo: identificar
+1) qué cosas hemos pedido a Claude o ya se construyeron y NO aparecen claramente en el documento,
+2) qué cosas sí aparecen en el documento pero todavía NO le hemos pedido a Claude de forma explícita en este hilo.
+
+============================================================
+A. COSAS QUE HEMOS PEDIDO / DEFINIDO / CONSTRUIDO Y NO ESTÁN CLARAS O NO APARECEN EN EL DOCUMENTO
+============================================================
+
+Estas son capacidades técnicas, de arquitectura o de plataforma que sí hemos trabajado en el hilo, pero que el documento funcional orientado a clínica no recoge de forma explícita o no desarrolla lo suficiente:
+
+1. Arquitectura multi-tenant por organization + branch
+- Migración conceptual de clinic_id hacia organization_id.
+- Separación organization / branch / org_members.
+- Scope de permisos por organización y sucursal.
+- Posibilidad de que un mismo usuario pertenezca a varias organizaciones y varias sucursales con roles distintos.
+- Regla de un solo owner por organization, sin copropiedad.
+
+2. Modelo de membresías y permisos avanzados
+- org_members con role y branch_scope.
+- Contexto activo por organización al iniciar sesión.
+- Soporte para asistentes compartidas entre varios odontólogos/organizaciones.
+- Aislamiento estricto entre tenants por RLS.
+
+3. Onboarding técnico y wizard de activación
+- Ruta /onboarding y /onboarding/resume.
+- onboarding_status con pasos del wizard.
+- createOrganization con validación de duplicados.
+- Redirección por middleware según sesión/estado.
+- Step específico para conectar WhatsApp dentro del onboarding.
+- Acción connectWhatsApp y opción markWhatsAppConnected como skip.
+
+4. Seguridad y RLS a nivel plataforma
+- Helpers RLS como is_org_member() y get_user_org_role().
+- Validaciones para evitar leakage entre tenants.
+- Guards de platform_role en rutas sensibles.
+- Revisión explícita de rutas con service_role client + filtros organization_id.
+
+5. Configuración técnica de WhatsApp multi-tenant
+- branch_whatsapp_config por branch.
+- phone_number_id como routing key entrante.
+- access_token_enc cifrado por branch.
+- waba_id por branch.
+- webhook_routing_key para n8n.
+- Variables globales en Vercel solo para WHATSAPP_VERIFY_TOKEN y WHATSAPP_APP_SECRET.
+- Tokens operativos por clínica/sucursal en DB, no globales.
+
+6. Webhook handler de WhatsApp
+- app/api/whatsapp/webhook/route.ts.
+- GET con hub.challenge para verificación de Meta.
+- POST con validación HMAC SHA-256 usando WHATSAPP_APP_SECRET.
+- Lectura del raw body antes del parse JSON.
+- Resolución del branch por phone_number_id.
+- Insert en webhook_queue.
+- Respuesta 200 rápida.
+- Observabilidad con logs para missing phone_number_id y no active branch.
+- Extracción de eventId/wamid para trazabilidad.
+
+7. Cifrado de credenciales WhatsApp
+- Helper lib/crypto/whatsapp-token.ts.
+- AES-256-GCM.
+- IV aleatorio de 12 bytes.
+- Formato iv:authTag:ciphertext.
+- Variable WHATSAPP_TOKEN_ENC_KEY.
+- Cifrado/descifrado solo en backend o Server Actions.
+
+8. Estrategia de environment variables y despliegue
+- Definición detallada de env vars de Supabase, Gemini, Anthropic, WhatsApp, n8n, cron y admin.
+- Separación entre variables públicas, privadas y por branch.
+- Riesgo de faltantes en Vercel para production readiness.
+- Regeneración de types/database.ts desde Supabase CLI.
+
+9. Gobernanza del modelo de IA
+- Decisión arquitectónica de usar Gemini como modelo principal.
+- Anthropic/Claude solo como legacy o fallback temporal.
+- Separación entre IA semántica vs reglas puras.
+- Regla: n8n orquesta, Supabase guarda estado, Gemini interpreta/clasifica.
+
+10. Estado de calidad / auditoría técnica final
+- Limpieza de referencias clinic_id activas.
+- Eliminación de workflow_runs obsoleta.
+- Fixes en analytics/signals, renewal, performance-alerts, intake-sla, reactivation.
+- Revisión de deploy readiness.
+- Identificación del webhook faltante como blocker de WhatsApp.
+
+11. Plataforma admin / superadmin
+- Mención de superadmin/plataforma como capa separada.
+- Rutas internas admin protegidas.
+- ADMIN_DASHBOARD_SECRET.
+- Visión de operación multi-tenant de plataforma, no solo visión clínica.
+
+12. QA y pruebas del onboarding / WhatsApp
+- Plan de pruebas de happy path.
+- Reanudación desde onboarding_status.
+- Casos de error de WhatsApp token inválido, duplicados, RLS y flows incompletos.
+- Recomendación de smoke tests E2E para onboarding + webhook_queue.
+
+============================================================
+B. OTRAS COSAS
+============================================================
+
+
+
+1. Bandeja omnicanal completa
+- Llamadas / registros de llamadas.
+- Notas de voz como canal.
+- Instagram y Facebook DM.
+- TikTok Leads Ads.
+- Google Business Profile.
+- Vista consolidada realmente omnicanal.
+
+2. Lead management funcional completo
+- Lead estructurado con todos los campos sugeridos.
+- Asociación con campañas y fuentes.
+- Deduplicación por documento además de teléfono.
+- Enriquecimiento automático detallado desde varios canales.
+
+3. Clasificación comercial avanzada de leads
+- Perfil económico estimado.
+- Riesgo de abandono del lead.
+- Motivo de consulta como campo funcional visible.
+- Priorización de hot leads dentro de UX operativa concreta.
+
+4. Asistente comercial visible para el staff
+- Respuestas sugeridas en UI.
+- Plantillas por tratamiento.
+- Tono configurable desde panel.
+- Aprobación humana antes de enviar en ciertos casos.
+
+5. Agenda inteligente completa
+- Propuesta de horarios disponibles.
+- Reagendamiento sin fricción.
+- Duración por procedimiento.
+- Especialista + sede.
+- Agenda diaria / semanal / por profesional.
+- Detección de espacios libres reutilizables.
+- Pago de reserva integrado al slot.
+
+6. Confirmaciones y recordatorios automáticos
+- Recordatorios 24h / 2h.
+- Confirmación interactiva.
+- Flujos de no respuesta.
+- Seguimiento automático a pacientes dudosos.
+
+7. Gestión de cancelaciones y no-shows funcional
+- Causa de cancelación/no-show.
+- Reagendamiento automático.
+- Medición de reincidencia.
+- Impacto económico del espacio perdido.
+
+8. Reactivación de pacientes inactivos
+- Segmentación por tratamiento y frecuencia.
+- Campañas personalizadas.
+- Medición de reactivados, conversiones e ingresos recuperados.
+
+9. Seguimiento post-tratamiento
+- Mensajes 24h/48h.
+- Registro en ficha del paciente.
+- Escalamiento clínico.
+- Protocolos de fidelización o contención.
+
+10. Ficha 360 del paciente
+- Historial consolidado.
+- Tratamientos consultados y realizados.
+- Campañas recibidas.
+- Pagos o reservas.
+- Alertas e incidencias.
+
+11. IA diferenciadora no pedida aún a Claude en implementación concreta
+- Resumen automático de conversaciones.
+- Extracción de compromisos y tareas.
+- Voice-to-task.
+- Voice-to-clinical-record.
+- Predictor de abandono/insatisfacción.
+- Derivación inteligente entre especialidades.
+- Analizador de fugas de ingreso.
+
+12. Centro de tareas y follow-up interno
+- Tareas manuales y automáticas.
+- Prioridad.
+- Estados pendientes/vencidas/completadas.
+- Apertura contextual de ficha/conversación.
+
+13. Alertas operativas en tiempo real
+- lead hot sin respuesta.
+- cita próxima sin confirmar.
+- paciente insatisfecho.
+- agenda con huecos.
+- stock bajo.
+- exceso de cancelaciones.
+- campañas con bajo rendimiento.
+
+14. Pipeline comercial-clínico visible
+- estados tipo nuevo lead, contactado, calificado, cita propuesta, atendido, perdido, reactivado, etc.
+
+15. Bitácora / trazabilidad funcional visible para usuario
+- quién respondió.
+- qué acción ejecutó la IA.
+- qué usuario aprobó una acción.
+- qué alertas se generaron.
+- resultado de workflows.
+
+16. Reporting gerencial completo
+- dashboard ejecutivo completo.
+- reporte de ROI.
+- reportes automáticos por WhatsApp o email.
+- análisis por sede, especialista y canal.
+
+17. Marketing y crecimiento
+- campañas de reactivación accionables desde UI.
+- flash offers para llenar huecos.
+- solicitud inteligente de reseñas.
+- gestión de reputación.
+
+18. Pagos y reserva
+- links de pago.
+- Yape / Plin / pago parcial o total.
+- vencimiento de reserva.
+- conciliación del estado de cita.
+- política anti no-show.
+
+.
+
+20. Configuración operativa de clínica desde panel
+- catálogo de tratamientos.
+- horarios por sede y médico.
+- feriados y bloqueos.
+- buffers entre citas.
+- activar/desactivar automatizaciones.
+- editar plantillas.
+- definir tono de marca.
+
+21. UX clínica completa tipo centro de operaciones
+- home operacional con conversaciones, leads críticos, agenda, alertas, tareas y métricas rápidas.
+- ficha rápida contextual antes de responder.
+- simplificación para personal no técnico.
+
+============================================================
+C. ZONA GRIS / PARCIALMENTE CUBIERTA
+============================================================
+
+Hay temas que sí están en el documento y también los hemos tocado en el hilo, pero más desde arquitectura que desde implementación funcional completa:
+
+1. WhatsApp
+- Sí se trabajó fuertemente la integración, seguridad, routing y onboarding.
+- Pero el documento habla además de uso clínico/operativo dentro de bandeja omnicanal y automatizaciones ya visibles para el usuario.
+
+2. Leads con IA
+- Sí definimos que Gemini debe clasificar leads y ser el corazón del sistema.
+- Pero no se ha pedido aún construir toda la UI/UX del clasificador, score visible, colas de priorización o panel de revisión.
+
+3. Dashboard
+- Sí hablamos de métricas, renewal, alerts, analytics y plataforma.
+- Pero el documento clínico plantea un dashboard gerencial mucho más rico y orientado a usuario final.
+
+4. Roles y permisos
+- Sí se diseñó arquitectura RBAC multi-org/multi-branch.
+- Pero no se ha pedido aún la matriz funcional completa de permisos por pantalla/acción para admin, gerente, recepcionista, médico y marketing.
+
+============================================================
+D. MENSAJE RECOMENDADO PARA CLAUDE
+============================================================
+
+Claude, compara lo construido hasta ahora con el documento funcional de clínica.
+
+Necesito que clasifiques en tres grupos:
+1. Lo ya construido o ya definido técnicamente pero que no estaba explicitado en el documento funcional.
+2. Lo que sí está en el documento funcional pero aún no hemos implementado ni te lo hemos pedido en detalle.
+3. Lo que está parcialmente cubierto y requiere pasar de arquitectura técnica a funcionalidad visible para el usuario.
+
+Quiero que uses este resumen como base y me devuelvas:
+- una matriz de cobertura,
+- prioridades por fase,
+- quick wins,
+- y gaps críticos entre la visión funcional y el estado real del producto.
+
+

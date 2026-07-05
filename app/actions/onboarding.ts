@@ -78,7 +78,7 @@ export async function createOrganization(prevState: { error?: string } | null, f
     .neq('status', 'converted')
 
   revalidatePath('/onboarding')
-  redirect('/onboarding?step=2')
+  redirect(`/onboarding?step=2&industry=${industry}`)
 }
 
 // ── Step 2: Create branch ──────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export async function createBranch(prevState: { error?: string } | null, formDat
   const sb = createAdminClient() as any
 
   const { data: org } = await sb.from('organizations')
-    .select('id, name')
+    .select('id, name, industry')
     .eq('owner_user_id', user.id)
     .is('deleted_at', null)
     .single()
@@ -102,6 +102,7 @@ export async function createBranch(prevState: { error?: string } | null, formDat
   const city       = (formData.get('city') as string)?.trim() || 'Lima'
   const address    = (formData.get('address') as string)?.trim() || null
   const phone      = (formData.get('phone') as string)?.trim() || null
+  const industry   = (formData.get('industry') as string) || org.industry || 'estetica'
 
   if (!branchName || branchName.length < 2) return { error: 'El nombre de la sucursal es requerido' }
 
@@ -126,7 +127,7 @@ export async function createBranch(prevState: { error?: string } | null, formDat
   await setActiveContext(org.id, branch.id)
 
   revalidatePath('/onboarding')
-  redirect('/onboarding?step=3')
+  redirect(`/onboarding?step=3&industry=${industry}`)
 }
 
 // ── Step 3: Connect WhatsApp (real credentials) ───────────────────────────
@@ -205,16 +206,19 @@ export async function connectWhatsApp(
     .update({ onboarding_status: 'whatsapp_connected' })
     .eq('id', org.id)
 
+  const industry = (formData.get('industry') as string) || 'estetica'
   revalidatePath('/onboarding')
-  redirect('/onboarding?step=4')
+  redirect(`/onboarding?step=4&industry=${industry}`)
 }
 
 // ── Step 3: Skip WhatsApp (connect later) ─────────────────────────────────
 
-export async function markWhatsAppConnected(_prevState: unknown, _formData: FormData) {
+export async function markWhatsAppConnected(_prevState: unknown, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
+
+  const industry = (formData.get('industry') as string) || 'estetica'
 
   const sb = createAdminClient() as any
   await sb.from('organizations')
@@ -223,7 +227,7 @@ export async function markWhatsAppConnected(_prevState: unknown, _formData: Form
     .is('deleted_at', null)
 
   revalidatePath('/onboarding')
-  redirect('/onboarding?step=4')
+  redirect(`/onboarding?step=4&industry=${industry}`)
 }
 
 // ── Step 4: Mark first flow active → go to dashboard ──────────────────────

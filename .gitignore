@@ -11,6 +11,10 @@ out/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.pulled
+.env.vercel
+!.env.example
 
 # vercel
 .vercel
@@ -23,4 +27,18 @@ next-env.d.ts
 .DS_Store
 *.pem
 
+# secretos / referencia con tokens
+docs/PacienteIA_Variables_tokens.csv
+memory/supabase_credentials.md
+contrasenhas.txt
+contrasenha*.txt
+*.secret
+
+# archivos temporales de office
+~$*
+
+# trabajo académico personal — no pertenece al repo de la app
+trabajo final/
+
 .vercel
+.env*.local

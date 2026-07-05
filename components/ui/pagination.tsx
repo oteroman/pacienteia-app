@@ -22,21 +22,21 @@ export function Pagination({ page, totalPages }: PaginationProps) {
 
   return (
     <div className="flex items-center justify-between py-3">
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-slate">
         Página {page} de {totalPages}
       </p>
       <div className="flex gap-2">
         <button
           onClick={() => go(page - 1)}
           disabled={page <= 1}
-          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 text-sm rounded-lg border border-fog disabled:opacity-40 hover:bg-mist transition-colors"
         >
           ← Anterior
         </button>
         <button
           onClick={() => go(page + 1)}
           disabled={page >= totalPages}
-          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 text-sm rounded-lg border border-fog disabled:opacity-40 hover:bg-mist transition-colors"
         >
           Siguiente →
         </button>

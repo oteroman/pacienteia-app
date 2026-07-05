@@ -29,7 +29,7 @@ export default function NewInteractionForm({ patients }: Props) {
 
       {/* Source type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate mb-2">
           Tipo de interacción
         </label>
         <div className="flex flex-wrap gap-2">
@@ -44,7 +44,7 @@ export default function NewInteractionForm({ patients }: Props) {
               />
               <span className="block px-3 py-1.5 rounded-lg border text-sm font-medium
                 peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-700
-                border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">
+                border-fog text-slate hover:border-fog transition-colors">
                 {SOURCE_LABELS[type]}
               </span>
             </label>
@@ -54,13 +54,13 @@ export default function NewInteractionForm({ patients }: Props) {
 
       {/* Patient (optional) */}
       <div>
-        <label htmlFor="patient_id" className="block text-sm font-medium text-gray-700 mb-1">
-          Paciente <span className="text-gray-400 font-normal">(opcional)</span>
+        <label htmlFor="patient_id" className="block text-sm font-medium text-slate mb-1">
+          Paciente <span className="text-slate font-normal">(opcional)</span>
         </label>
         <select
           id="patient_id"
           name="patient_id"
-          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-brand-300"
+          className="w-full border border-fog rounded-xl px-3 py-2 text-sm text-ink bg-white focus:outline-none focus:ring-2 focus:ring-brand-300"
         >
           <option value="">— Sin paciente específico —</option>
           {patients.map((p) => (
@@ -71,7 +71,7 @@ export default function NewInteractionForm({ patients }: Props) {
 
       {/* Raw content */}
       <div>
-        <label htmlFor="raw_content" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="raw_content" className="block text-sm font-medium text-slate mb-1">
           Contenido
         </label>
         <textarea
@@ -81,9 +81,9 @@ export default function NewInteractionForm({ patients }: Props) {
           required
           minLength={5}
           placeholder="Pega aquí el mensaje de WhatsApp, transcripción de llamada o nota del staff..."
-          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
+          className="w-full border border-fog rounded-xl px-3 py-2 text-sm text-ink placeholder-slate focus:outline-none focus:ring-2 focus:ring-brand-300 resize-none"
         />
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-slate mt-1">
           El copiloto analizará el texto y extraerá compromisos, riesgos y tareas automáticamente.
         </p>
       </div>
@@ -98,7 +98,7 @@ export default function NewInteractionForm({ patients }: Props) {
         </button>
         <Link
           href="/copilot"
-          className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate bg-[#F3F6F9] hover:bg-fog transition-colors"
         >
           Cancelar
         </Link>

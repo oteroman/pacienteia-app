@@ -51,7 +51,7 @@ export default async function IntakeDetailPage({
   return (
     <div className="max-w-2xl mx-auto space-y-5">
 
-      <Link href="/inbox" className="text-sm text-gray-400 hover:text-gray-600">
+      <Link href="/inbox" className="text-sm text-slate hover:text-slate">
         ← Bandeja unificada
       </Link>
 
@@ -90,53 +90,53 @@ export default async function IntakeDetailPage({
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sla.color}`}>
                 {sla.overdue ? '⚠ ' : ''}{sla.label}
               </span>
-            ) : <span className="text-xs text-gray-400">—</span>}
+            ) : <span className="text-xs text-slate">—</span>}
           </MetaCell>
           <MetaCell label="Interacciones">
-            <span className="text-sm font-bold text-gray-800">{intake.interactionCount}</span>
+            <span className="text-sm font-bold text-ink">{intake.interactionCount}</span>
           </MetaCell>
           <MetaCell label="Primera resp.">
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-slate">
               {intake.firstResponseAt
                 ? formatDateShort(intake.firstResponseAt)
                 : <span className="text-amber-600">Pendiente</span>}
             </span>
           </MetaCell>
           <MetaCell label="Asignado">
-            <span className="text-xs text-gray-600">
-              {isAssignedMe ? 'Yo' : intake.assignedTo ? 'Otro' : <span className="text-gray-400">Sin asignar</span>}
+            <span className="text-xs text-slate">
+              {isAssignedMe ? 'Yo' : intake.assignedTo ? 'Otro' : <span className="text-slate">Sin asignar</span>}
             </span>
           </MetaCell>
         </div>
 
         {intake.followUpDueAt && intake.status === 'waiting_customer' && (
-          <p className="text-xs text-purple-600 bg-purple-50 rounded-lg px-3 py-2">
+          <p className="text-xs text-ai-500 bg-ai-50 rounded-lg px-3 py-2">
             Follow-up automático si no responde antes de {formatDateShort(intake.followUpDueAt)}
           </p>
         )}
 
         {/* Contact info */}
         {(intake.contactName || intake.contactPhone || intake.contactEmail) && (
-          <div className="bg-gray-50 rounded-xl p-3 space-y-0.5">
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Contacto</p>
-            {intake.contactName  && <p className="text-sm font-semibold text-gray-800">{intake.contactName}</p>}
-            {intake.contactPhone && <p className="text-sm text-gray-600">{intake.contactPhone}</p>}
-            {intake.contactEmail && <p className="text-sm text-gray-600">{intake.contactEmail}</p>}
+          <div className="bg-mist rounded-xl p-3 space-y-0.5">
+            <p className="text-[10px] font-medium text-slate uppercase tracking-wide mb-1">Contacto</p>
+            {intake.contactName  && <p className="text-sm font-semibold text-ink">{intake.contactName}</p>}
+            {intake.contactPhone && <p className="text-sm text-slate">{intake.contactPhone}</p>}
+            {intake.contactEmail && <p className="text-sm text-slate">{intake.contactEmail}</p>}
           </div>
         )}
 
         {/* Summary */}
         {intake.normalizedSummary && (
           <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Resumen IA</p>
-            <p className="text-sm text-gray-700">{intake.normalizedSummary}</p>
+            <p className="text-[10px] font-medium text-slate uppercase tracking-wide mb-1">Resumen IA</p>
+            <p className="text-sm text-slate">{intake.normalizedSummary}</p>
           </div>
         )}
 
         {/* Raw content */}
         <div>
-          <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">Mensaje original</p>
-          <pre className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-xl p-3 font-sans">
+          <p className="text-[10px] font-medium text-slate uppercase tracking-wide mb-1">Mensaje original</p>
+          <pre className="text-sm text-slate whitespace-pre-wrap bg-mist rounded-xl p-3 font-sans">
             {intake.rawContent}
           </pre>
         </div>
@@ -151,7 +151,7 @@ export default async function IntakeDetailPage({
       {/* Response templates (client component) */}
       {intake.detectedIntent && (
         <div className="rounded-2xl border bg-white p-5 space-y-3">
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sugerencias de respuesta</p>
+          <p className="text-xs font-semibold text-slate uppercase tracking-wide">Sugerencias de respuesta</p>
           <ResponseTemplates
             intakeId={intake.id}
             intent={intake.detectedIntent}
@@ -174,7 +174,7 @@ export default async function IntakeDetailPage({
           )}
           {(intake.status === 'new' || intake.status === 'in_progress') && (
             <form action={waitCustAction}>
-              <button type="submit" className="bg-purple-50 text-purple-700 hover:bg-purple-100 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
+              <button type="submit" className="bg-ai-50 text-ai-600 hover:bg-ai-100 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
                 Esperando cliente
               </button>
             </form>
@@ -192,7 +192,7 @@ export default async function IntakeDetailPage({
             </button>
           </form>
           <form action={dismissAction}>
-            <button type="submit" className="bg-gray-100 text-gray-600 hover:bg-gray-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
+            <button type="submit" className="bg-[#F3F6F9] text-slate hover:bg-fog px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
               Ignorar
             </button>
           </form>
@@ -205,8 +205,8 @@ export default async function IntakeDetailPage({
 
 function MetaCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-3">
-      <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+    <div className="bg-mist rounded-xl p-3">
+      <p className="text-[10px] font-medium text-slate uppercase tracking-wide mb-1">{label}</p>
       {children}
     </div>
   )

@@ -25,35 +25,55 @@ const GROUPS: NavGroup[] = [
     id: 'gestion',
     label: 'Gestión',
     items: [
-      { label: 'Pacientes', href: '/patients',     desc: 'Historiales y seguimiento' },
-      { label: 'Citas',     href: '/appointments', desc: 'Agenda y confirmaciones'   },
-      { label: 'Leads',     href: '/leads',        desc: 'Captación y nurturing'     },
+      { label: 'Pacientes',  href: '/patients',     desc: 'Historiales y seguimiento' },
+      { label: 'Citas',      href: '/appointments', desc: 'Agenda y confirmaciones'  },
+      { label: 'Calendario', href: '/calendar',     desc: 'Vista semanal y diaria'   },
+      { label: 'Leads',      href: '/leads',        desc: 'Captación y nurturing'    },
     ],
   },
   {
     id: 'ia',
     label: 'Copiloto IA',
     items: [
-      { label: 'Copiloto',  href: '/copilot',   desc: 'Tareas automatizadas por IA' },
-      { label: 'Ops',       href: '/ops',        desc: 'Visión operativa cruzada'    },
-      { label: 'Rebooking', href: '/rebooking',  desc: 'Cancelaciones pendientes'    },
-      { label: 'Backfill',  href: '/backfill',   desc: 'Slots libres prioritarios'   },
+      { label: 'Copiloto',     href: '/copilot',       desc: 'Tareas automatizadas por IA'   },
+      { label: 'Bitácora',     href: '/activity',      desc: 'Actividad del staff y la IA'   },
+      { label: 'Sala Espera',  href: '/waiting-room',  desc: 'Cola de pacientes en recepción' },
+      { label: 'Ops',          href: '/ops',           desc: 'Visión operativa cruzada'       },
+      { label: 'Rebooking',    href: '/rebooking',     desc: 'Cancelaciones pendientes'       },
+      { label: 'Backfill',     href: '/backfill',      desc: 'Slots libres prioritarios'      },
     ],
   },
   {
     id: 'analisis',
     label: 'Análisis',
     items: [
-      { label: 'Métricas', href: '/analytics',         desc: 'KPIs de operación'       },
-      { label: 'Revenue',  href: '/analytics/revenue', desc: 'Ingresos y recuperación'  },
-      { label: 'Renewal',  href: '/renewal',            desc: 'Churn risk y expansión'  },
+      { label: 'Métricas',       href: '/analytics',             desc: 'KPIs de operación'          },
+      { label: 'Crecimiento',    href: '/analytics/growth',     desc: 'Evolución 3 / 6 / 12 meses' },
+      { label: 'Revenue',        href: '/analytics/revenue',    desc: 'Ingresos y recuperación'    },
+      { label: 'Recordatorios',  href: '/analytics/reminders',  desc: 'Confirmaciones y no-shows'  },
+      { label: 'Reputación',     href: '/analytics/reputation',   desc: 'Encuestas y reseñas Google'  },
+      { label: 'Reactivación',   href: '/analytics/reactivation', desc: 'Pacientes inactivos'         },
+      { label: 'Fugas Mkt',     href: '/analytics/marketing',   desc: 'CPL y tasa de confirmación'  },
     ],
   },
 ]
 
 const CONFIG: NavItem[] = [
-  { label: 'Ajustes', href: '/settings/clinic', desc: 'Configuración de clínica' },
-  { label: 'Mi plan', href: '/billing',          desc: 'Suscripción y facturación' },
+  { label: 'Ajustes',        href: '/settings/clinic',         desc: 'Configuración de clínica'   },
+  { label: 'Staff',           href: '/settings/staff',         desc: 'Equipo y permisos'           },
+  { label: 'Sucursales',     href: '/settings/branches',       desc: 'Sedes y ubicaciones'        },
+  { label: 'Profesionales',  href: '/settings/professionals',  desc: 'Equipo médico y terapeutas' },
+  { label: 'Horarios',       href: '/settings/schedules',      desc: 'Disponibilidad y bloqueos'  },
+  { label: 'Servicios',      href: '/settings/services',       desc: 'Catálogo de tratamientos'   },
+  { label: 'Redes Sociales',  href: '/settings/social',        desc: 'Facebook, Instagram, TikTok'  },
+  { label: 'Web Forms',       href: '/settings/webforms',      desc: 'Formulario embed para tu web' },
+  { label: 'Plantillas',      href: '/settings/messages',      desc: 'Respuestas rápidas WhatsApp'  },
+  { label: 'Pagos',           href: '/settings/payments',      desc: 'Separación anti no-show'      },
+  { label: 'Automatizaciones', href: '/settings/automations', desc: 'Activar/pausar flujos automáticos' },
+  { label: 'Reputación',     href: '/settings/reputation',     desc: 'Google Business y reseñas'  },
+  { label: 'Sala de Espera', href: '/settings/waiting-room',    desc: 'QR para registro de llegada'   },
+  { label: 'API Keys',       href: '/settings/api-keys',        desc: 'Integra con sistemas externos' },
+  { label: 'Mi plan',        href: '/billing',                  desc: 'Suscripción y facturación' },
 ]
 
 // ── Props ────────────────────────────────────────────────────────
@@ -71,6 +91,26 @@ export function NavHeader({ user }: NavHeaderProps) {
   const [configOpen, setConfigOpen]   = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const navRef = useRef<HTMLElement>(null)
+
+  // Notification badge counts (polled every 30s)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [pendingLeads,   setPendingLeads]   = useState(0)
+
+  useEffect(() => {
+    let active = true
+    async function fetchCounts() {
+      try {
+        const res = await fetch('/api/notifications')
+        if (!res.ok || !active) return
+        const data = await res.json()
+        setUnreadMessages(data.unreadMessages ?? 0)
+        setPendingLeads(data.pendingLeads ?? 0)
+      } catch { /* ignore */ }
+    }
+    fetchCounts()
+    const id = setInterval(() => { if (document.visibilityState === 'visible') fetchCounts() }, 30_000)
+    return () => { active = false; clearInterval(id) }
+  }, [])
 
   // Close everything on outside click or Escape
   useEffect(() => {
@@ -105,7 +145,7 @@ export function NavHeader({ user }: NavHeaderProps) {
       {/* ── Main Header ────────────────────────────────────── */}
       <header
         ref={navRef}
-        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm"
+        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-fog shadow-xs"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 gap-4">
@@ -115,7 +155,7 @@ export function NavHeader({ user }: NavHeaderProps) {
               <Link href="/dashboard" className="text-brand-700 font-bold text-lg tracking-tight shrink-0">
                 Paciente IA
               </Link>
-              <span className="hidden sm:block text-gray-200 shrink-0">|</span>
+              <span className="hidden sm:block text-fog shrink-0">|</span>
               <ClinicSelector />
             </div>
 
@@ -124,22 +164,28 @@ export function NavHeader({ user }: NavHeaderProps) {
               {/* Standalone items */}
               {STANDALONE.map(({ label, href }) => {
                 const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                const badge  = href === '/inbox' ? unreadMessages : 0
                 return (
                   <Link
                     key={href}
                     href={href}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    className={`relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                       active
                         ? 'bg-brand-50 text-brand-700'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                        : 'text-slate hover:text-ink hover:bg-mist'
                     }`}
                   >
                     {label}
+                    {badge > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
 
-              <span className="w-px h-4 bg-gray-200 mx-1" />
+              <span className="w-px h-4 bg-fog mx-1" />
 
               {/* Group dropdowns */}
               {GROUPS.map((group) => {
@@ -152,7 +198,7 @@ export function NavHeader({ user }: NavHeaderProps) {
                       className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                         isGroupActive || isOpen
                           ? 'bg-brand-50 text-brand-700'
-                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                          : 'text-slate hover:text-ink hover:bg-mist'
                       }`}
                     >
                       {group.label}
@@ -160,23 +206,29 @@ export function NavHeader({ user }: NavHeaderProps) {
                     </button>
 
                     {isOpen && (
-                      <div className="absolute left-0 top-full mt-1.5 w-56 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden">
+                      <div className="absolute left-0 top-full mt-1.5 w-56 bg-white border border-fog rounded-xl shadow-md z-50 py-1.5 overflow-hidden">
                         {group.items.map((item) => {
-                          const active = pathname.startsWith(item.href)
+                          const active    = pathname.startsWith(item.href)
+                          const itemBadge = item.href === '/leads' ? pendingLeads : 0
                           return (
                             <Link
                               key={item.href}
                               href={item.href}
                               onClick={() => setOpenGroup(null)}
                               className={`flex flex-col px-4 py-2.5 transition-colors ${
-                                active ? 'bg-brand-50' : 'hover:bg-gray-50'
+                                active ? 'bg-brand-50' : 'hover:bg-mist'
                               }`}
                             >
-                              <span className={`text-sm font-medium ${active ? 'text-brand-700' : 'text-gray-800'}`}>
+                              <span className={`flex items-center gap-2 text-sm font-medium ${active ? 'text-brand-700' : 'text-ink'}`}>
                                 {item.label}
+                                {itemBadge > 0 && (
+                                  <span className="min-w-[18px] h-4.5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                                    {itemBadge > 99 ? '99+' : itemBadge}
+                                  </span>
+                                )}
                               </span>
                               {item.desc && (
-                                <span className="text-xs text-gray-400 mt-0.5 leading-snug">{item.desc}</span>
+                                <span className="text-xs text-slate mt-0.5 leading-snug">{item.desc}</span>
                               )}
                             </Link>
                           )
@@ -204,7 +256,7 @@ export function NavHeader({ user }: NavHeaderProps) {
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     CONFIG.some(i => pathname.startsWith(i.href)) || configOpen
                       ? 'bg-brand-50 text-brand-700'
-                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      : 'text-slate hover:text-ink hover:bg-mist'
                   }`}
                 >
                   <GearIcon />
@@ -212,7 +264,7 @@ export function NavHeader({ user }: NavHeaderProps) {
                 </button>
 
                 {configOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-fog rounded-xl shadow-md z-50 py-1.5 overflow-hidden">
                     {CONFIG.map((item) => {
                       const active = pathname.startsWith(item.href)
                       return (
@@ -221,14 +273,14 @@ export function NavHeader({ user }: NavHeaderProps) {
                           href={item.href}
                           onClick={() => setConfigOpen(false)}
                           className={`flex flex-col px-4 py-2.5 transition-colors ${
-                            active ? 'bg-brand-50' : 'hover:bg-gray-50'
+                            active ? 'bg-brand-50' : 'hover:bg-mist'
                           }`}
                         >
-                          <span className={`text-sm font-medium ${active ? 'text-brand-700' : 'text-gray-800'}`}>
+                          <span className={`text-sm font-medium ${active ? 'text-brand-700' : 'text-ink'}`}>
                             {item.label}
                           </span>
                           {item.desc && (
-                            <span className="text-xs text-gray-400 mt-0.5">{item.desc}</span>
+                            <span className="text-xs text-slate mt-0.5">{item.desc}</span>
                           )}
                         </Link>
                       )
@@ -238,13 +290,13 @@ export function NavHeader({ user }: NavHeaderProps) {
               </div>
 
               {/* Email (desktop) */}
-              <span className="hidden xl:block text-sm text-gray-400 truncate max-w-[160px]">
+              <span className="hidden xl:block text-sm text-slate truncate max-w-[160px]">
                 {user.email}
               </span>
 
               {/* Logout (desktop) */}
               <form action={logout} className="hidden lg:block">
-                <button type="submit" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
+                <button type="submit" className="text-sm text-slate hover:text-ink transition-colors">
                   Salir
                 </button>
               </form>
@@ -252,12 +304,12 @@ export function NavHeader({ user }: NavHeaderProps) {
               {/* Hamburger (mobile) */}
               <button
                 onClick={() => setMobileOpen(v => !v)}
-                className="lg:hidden flex flex-col gap-1.5 p-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                className="lg:hidden flex flex-col gap-1.5 p-1.5 rounded-md hover:bg-mist transition-colors"
                 aria-label="Abrir menú"
               >
-                <span className={`block h-0.5 w-5 bg-gray-600 transition-transform ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
-                <span className={`block h-0.5 w-5 bg-gray-600 transition-opacity ${mobileOpen ? 'opacity-0' : ''}`} />
-                <span className={`block h-0.5 w-5 bg-gray-600 transition-transform ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+                <span className={`block h-0.5 w-5 bg-slate transition-transform ${mobileOpen ? 'rotate-45 translate-y-2' : ''}`} />
+                <span className={`block h-0.5 w-5 bg-slate transition-opacity ${mobileOpen ? 'opacity-0' : ''}`} />
+                <span className={`block h-0.5 w-5 bg-slate transition-transform ${mobileOpen ? '-rotate-45 -translate-y-2' : ''}`} />
               </button>
             </div>
           </div>
@@ -273,20 +325,20 @@ export function NavHeader({ user }: NavHeaderProps) {
           />
           <aside className="fixed left-0 top-0 bottom-0 w-72 bg-white z-50 overflow-y-auto flex flex-col shadow-2xl lg:hidden">
             {/* Sidebar header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-fog">
               <span className="font-bold text-brand-700 text-lg">Paciente IA</span>
               <button
                 onClick={() => setMobileOpen(false)}
-                className="text-gray-400 hover:text-gray-700 text-2xl leading-none font-light"
+                className="text-slate hover:text-ink text-2xl leading-none font-light"
               >
                 ×
               </button>
             </div>
 
             {/* Clinic */}
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-100">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-0.5">Clínica activa</p>
-              <p className="text-sm font-semibold text-gray-800">{clinic.name}</p>
+            <div className="px-5 py-3 bg-mist border-b border-fog">
+              <p className="text-[10px] font-semibold text-slate uppercase tracking-widest mb-0.5">Clínica activa</p>
+              <p className="text-sm font-semibold text-ink">{clinic.name}</p>
             </div>
 
             {/* Nav items */}
@@ -294,15 +346,21 @@ export function NavHeader({ user }: NavHeaderProps) {
               {/* Standalone */}
               {STANDALONE.map(({ label, href }) => {
                 const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+                const badge  = href === '/inbox' ? unreadMessages : 0
                 return (
                   <Link
                     key={href}
                     href={href}
-                    className={`flex items-center px-5 py-2.5 text-sm font-medium transition-colors ${
-                      active ? 'text-brand-700 bg-brand-50' : 'text-gray-700 hover:bg-gray-50'
+                    className={`flex items-center justify-between px-5 py-2.5 text-sm font-medium transition-colors ${
+                      active ? 'text-brand-700 bg-brand-50' : 'text-ink hover:bg-mist'
                     }`}
                   >
                     {label}
+                    {badge > 0 && (
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    )}
                   </Link>
                 )
               })}
@@ -310,7 +368,7 @@ export function NavHeader({ user }: NavHeaderProps) {
               {/* Groups */}
               {GROUPS.map((group) => (
                 <div key={group.id} className="mt-3">
-                  <p className="px-5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <p className="px-5 py-1 text-[10px] font-bold text-slate uppercase tracking-widest">
                     {group.label}
                   </p>
                   {group.items.map(({ label, href }) => {
@@ -320,7 +378,7 @@ export function NavHeader({ user }: NavHeaderProps) {
                         key={href}
                         href={href}
                         className={`flex items-center px-5 py-2.5 text-sm transition-colors ${
-                          active ? 'text-brand-700 font-medium bg-brand-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                          active ? 'text-brand-700 font-medium bg-brand-50' : 'text-slate hover:bg-mist hover:text-ink'
                         }`}
                       >
                         {label}
@@ -331,8 +389,8 @@ export function NavHeader({ user }: NavHeaderProps) {
               ))}
 
               {/* Config */}
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <p className="px-5 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <div className="mt-3 pt-3 border-t border-fog">
+                <p className="px-5 py-1 text-[10px] font-bold text-slate uppercase tracking-widest">
                   Configuración
                 </p>
                 {CONFIG.map(({ label, href }) => {
@@ -342,7 +400,7 @@ export function NavHeader({ user }: NavHeaderProps) {
                       key={href}
                       href={href}
                       className={`flex items-center px-5 py-2.5 text-sm transition-colors ${
-                        active ? 'text-brand-700 font-medium bg-brand-50' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        active ? 'text-brand-700 font-medium bg-brand-50' : 'text-slate hover:bg-mist hover:text-ink'
                       }`}
                     >
                       {label}
@@ -353,15 +411,15 @@ export function NavHeader({ user }: NavHeaderProps) {
             </nav>
 
             {/* Sidebar footer */}
-            <div className="px-5 py-4 border-t border-gray-100">
+            <div className="px-5 py-4 border-t border-fog">
               {planBadge && (
                 <span className={`inline-flex text-xs font-medium border px-2.5 py-0.5 rounded-full mb-3 ${planBadge.cls}`}>
                   {planBadge.label}
                 </span>
               )}
-              <p className="text-xs text-gray-400 truncate mb-2">{user.email}</p>
+              <p className="text-xs text-slate truncate mb-2">{user.email}</p>
               <form action={logout}>
-                <button type="submit" className="text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">
+                <button type="submit" className="text-sm text-slate hover:text-ink transition-colors font-medium">
                   Cerrar sesión
                 </button>
               </form>

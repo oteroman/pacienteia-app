@@ -49,14 +49,14 @@ export function PhotoUpload({ currentUrl, onUpload }: PhotoUploadProps) {
     <div className="flex items-center gap-4">
       <div
         onClick={() => inputRef.current?.click()}
-        className="relative w-16 h-16 rounded-full border-2 border-dashed border-gray-300
-                   hover:border-brand-400 cursor-pointer overflow-hidden bg-gray-50
+        className="relative w-16 h-16 rounded-full border-2 border-dashed border-fog
+                   hover:border-brand-400 cursor-pointer overflow-hidden bg-mist
                    flex items-center justify-center transition-colors"
       >
         {preview ? (
           <Image src={preview} alt="Foto" fill className="object-cover" />
         ) : (
-          <span className="text-2xl text-gray-300">👤</span>
+          <span className="text-2xl text-fog">👤</span>
         )}
       </div>
       <div className="flex flex-col gap-1">
@@ -68,7 +68,7 @@ export function PhotoUpload({ currentUrl, onUpload }: PhotoUploadProps) {
         >
           {uploading ? 'Subiendo...' : preview ? 'Cambiar foto' : 'Subir foto'}
         </button>
-        <p className="text-xs text-gray-400">JPG, PNG o WebP · máx 5MB</p>
+        <p className="text-xs text-slate">JPG, PNG o WebP · máx 5MB</p>
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
       <input

@@ -26,10 +26,10 @@ export default async function NewInteractionPage() {
     <div className="max-w-2xl mx-auto space-y-6">
 
       <div className="flex items-center gap-3">
-        <Link href="/copilot" className="text-sm text-gray-400 hover:text-gray-600">
+        <Link href="/copilot" className="text-sm text-slate hover:text-slate">
           ← Volver
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Nueva interacción</h1>
+        <h1 className="text-2xl font-bold text-ink">Nueva interacción</h1>
       </div>
 
       <NewInteractionForm patients={patients} />
