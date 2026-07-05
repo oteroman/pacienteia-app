@@ -145,7 +145,7 @@ export default async function BillingPage() {
       <div className="bg-white rounded-2xl border border-fog shadow-xs p-6 space-y-5">
         <h2 className="text-sm text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Uso este mes</h2>
 
-        <UsageBar label="Leads" gate={planStatus.usage.leads} />
+        <UsageBar label="Consultas" gate={planStatus.usage.leads} />
         <UsageBar label="Citas" gate={planStatus.usage.appointments} />
         <UsageBar
           label="Usuarios activos"

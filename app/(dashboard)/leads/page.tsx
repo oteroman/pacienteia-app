@@ -50,7 +50,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Leads</h1>
+          <h1 className="text-2xl font-bold text-ink">Consultas</h1>
           <div className="flex items-center gap-3 mt-1 text-sm text-slate flex-wrap">
             <span>{count ?? 0} activos</span>
             {newCount > 0     && <span className="text-blue-600 font-medium">{newCount} nuevos</span>}

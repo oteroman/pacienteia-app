@@ -19,14 +19,14 @@ export default async function WebFormsPage() {
     return (
       <div className="max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Web Forms</h1>
-          <p className="text-sm text-slate mt-1">Captura leads desde tu sitio web directamente en PacienteIA.</p>
+          <h1 className="text-2xl font-bold text-ink">Formularios web</h1>
+          <p className="text-sm text-slate mt-1">Captura consultas desde tu sitio web directamente en PacienteIA.</p>
         </div>
         <div className="rounded-2xl border border-fog bg-white p-8 text-center space-y-4">
           <p className="text-3xl">🔒</p>
           <p className="font-semibold text-ink">Función disponible en plan Pro</p>
           <p className="text-sm text-slate max-w-sm mx-auto">
-            Con Web Forms puedes integrar un formulario de contacto en tu web. Cada envío llega como lead en tu bandeja con triage automático por IA.
+            Con los formularios web puedes integrar un formulario de contacto en tu web. Cada envío llega como consulta en tu bandeja con clasificación automática por IA.
           </p>
           <Link
             href="/pricing"
@@ -93,9 +93,9 @@ export default async function WebFormsPage() {
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-ink">Web Forms</h1>
+        <h1 className="text-2xl font-bold text-ink">Formularios web</h1>
         <p className="text-sm text-slate mt-1">
-          Integra un formulario de contacto en tu sitio web. Cada envío llega como lead con triage automático de IA.
+          Integra un formulario de contacto en tu sitio web. Cada envío llega como consulta con clasificación automática de IA.
         </p>
       </div>
 
@@ -162,7 +162,7 @@ export default async function WebFormsPage() {
       {/* Test */}
       <div className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-800 space-y-1">
         <p className="font-semibold">¿Cómo probar?</p>
-        <p>Envía el cURL de arriba desde tu terminal. Luego ve a <Link href="/leads" className="underline">Leads</Link> — el mensaje aparecerá en segundos con prioridad asignada por IA.</p>
+        <p>Envía el cURL de arriba desde tu terminal. Luego ve a <Link href="/leads" className="underline">Consultas</Link> — el mensaje aparecerá en segundos con prioridad asignada por IA.</p>
       </div>
     </div>
   )

@@ -20,7 +20,7 @@ export default async function BackfillPage() {
     return (
       <div className="max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Backfill de slots</h1>
+          <h1 className="text-2xl font-bold text-ink">Recuperación de huecos</h1>
           <p className="text-sm text-slate mt-1">Huecos detectados + candidatos automáticos para llenar agenda</p>
         </div>
         <div className="rounded-2xl border border-fog bg-white p-10 text-center space-y-4">
@@ -47,7 +47,7 @@ export default async function BackfillPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Backfill de slots</h1>
+          <h1 className="text-2xl font-bold text-ink">Recuperación de huecos</h1>
           <p className="text-sm text-slate mt-1">
             Huecos detectados + candidatos automáticos para llenar agenda
           </p>

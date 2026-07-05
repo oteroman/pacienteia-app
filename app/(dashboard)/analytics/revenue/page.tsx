@@ -29,7 +29,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
     return (
       <div className="max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Analytics — Revenue</h1>
+          <h1 className="text-2xl font-bold text-ink">Ingresos</h1>
           <p className="text-sm text-slate mt-1">Dashboard ROI en S/ — valor recuperado, no-shows evitados, benchmarks.</p>
         </div>
         <div className="rounded-2xl border border-fog bg-white p-10 text-center space-y-4">
@@ -67,7 +67,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
       {/* Header + period selector */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Revenue & Rendimiento</h1>
+          <h1 className="text-2xl font-bold text-ink">Ingresos y rendimiento</h1>
           <p className="text-sm text-slate mt-1">{kpi.period.label} · estimaciones basadas en citas y recuperaciones</p>
         </div>
         <div className="flex gap-1 bg-[#F3F6F9] rounded-lg p-1">
@@ -88,7 +88,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
       {/* Revenue summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <RevenueCard
-          label="Revenue realizado"
+          label="Ingresos realizados"
           value={kpi.revenueActual}
           sub={`${kpi.apptsCompleted} citas completadas`}
           trend={kpi.trends.revenueActual}
@@ -98,7 +98,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
           isMoney
         />
         <RevenueCard
-          label="Revenue recuperado"
+          label="Ingresos recuperados"
           value={kpi.revenueRecovered}
           sub={`${kpi.rebooksSuccess} reagendados + ${kpi.slotsFilled} slots llenados`}
           trend={kpi.trends.revenueRecovered}
@@ -109,7 +109,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
           isMoney
         />
         <RevenueCard
-          label="Revenue en riesgo"
+          label="Ingresos en riesgo"
           value={kpi.revenueAtRisk}
           sub={`${kpi.noShows} no-shows + ${kpi.cancellations} cancelaciones`}
           color="text-red-600"
@@ -217,7 +217,7 @@ export default async function RevenuePage({ searchParams }: { searchParams: Sear
             network={benchmarks.medianSlaRate}
           />
           <BenchmarkCard
-            label="Revenue recuperado"
+            label="Ingresos recuperados"
             yours={kpi.revenueRecovered}
             network={benchmarks.medianRecovered}
             isMoney

@@ -25,7 +25,7 @@ export default async function RebookingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Rebooking</h1>
+          <h1 className="text-2xl font-bold text-ink">Reagendar cancelaciones</h1>
           <p className="text-sm text-slate mt-1">
             Recuperación de cancelaciones, no-shows y silencios
           </p>
