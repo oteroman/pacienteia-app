@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter }               from 'next/navigation'
-import { useState, useRef }        from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { dragRescheduleAppointment } from '@/app/actions/appointments'
 import type { CalendarAppointment, CalendarProfessional, CalendarSchedule, CalendarBlock } from './page'
 
@@ -63,15 +63,21 @@ interface PositionedApt extends CalendarAppointment {
   topPx: number; heightPx: number; col: number; colCount: number
 }
 
+function aptDurationMin(apt: CalendarAppointment): number {
+  return apt.duration_min && apt.duration_min > 0 ? apt.duration_min : DURATION_MIN
+}
+
 function layoutApts(apts: CalendarAppointment[]): PositionedApt[] {
   const sorted = [...apts].sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
   const cols: CalendarAppointment[][] = []
 
   for (const apt of sorted) {
+    const start = new Date(apt.scheduled_at).getTime()
     let placed = false
     for (let c = 0; c < cols.length; c++) {
-      const lastEnd = new Date(cols[c].at(-1)!.scheduled_at).getTime() + DURATION_MIN * 60_000
-      if (new Date(apt.scheduled_at).getTime() >= lastEnd) {
+      const last    = cols[c].at(-1)!
+      const lastEnd = new Date(last.scheduled_at).getTime() + aptDurationMin(last) * 60_000
+      if (start >= lastEnd) {
         cols[c].push(apt); placed = true; break
       }
     }
@@ -81,7 +87,7 @@ function layoutApts(apts: CalendarAppointment[]): PositionedApt[] {
   const result: PositionedApt[] = []
   for (let c = 0; c < cols.length; c++) {
     for (const apt of cols[c]) {
-      result.push({ ...apt, topPx: aptTopPx(apt.scheduled_at), heightPx: (DURATION_MIN / SLOT_MIN) * SLOT_H, col: c, colCount: cols.length })
+      result.push({ ...apt, topPx: aptTopPx(apt.scheduled_at), heightPx: (aptDurationMin(apt) / SLOT_MIN) * SLOT_H, col: c, colCount: cols.length })
     }
   }
   return result
@@ -97,6 +103,13 @@ const TIME_LABELS = Array.from({ length: TOTAL_SLOTS + 1 }, (_, i) => {
 
 const STATUS_OPACITY: Record<string, string> = {
   confirmed: 'opacity-100', scheduled: 'opacity-90', completed: 'opacity-50', no_show: 'opacity-30 grayscale',
+}
+
+const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
+  confirmed: { text: 'Confirmada', cls: 'bg-lima-50 text-lima-700' },
+  scheduled: { text: 'Programada', cls: 'bg-blue-50 text-blue-700' },
+  completed: { text: 'Atendida',   cls: 'bg-mist text-slate'      },
+  no_show:   { text: 'No asistió', cls: 'bg-red-50 text-red-700'  },
 }
 
 // ── Availability helpers ──────────────────────────────────────────────────────
@@ -136,6 +149,23 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
   const [dragging, setDragging]     = useState(false)
   const [saving, setSaving]         = useState(false)
+
+  // Current-time indicator ("ahora") — only on today's date, client-only.
+  const [nowPx, setNowPx] = useState<number | null>(null)
+  useEffect(() => {
+    if (dayISO !== todayISO) { setNowPx(null); return }
+    function tick() {
+      const lima = utcToLima(Date.now())
+      const mins = lima.getUTCHours() * 60 + lima.getUTCMinutes()
+      setNowPx(mins < START_HOUR * 60 || mins > END_HOUR * 60 ? null : (mins - START_HOUR * 60) / SLOT_MIN * SLOT_H)
+    }
+    tick()
+    const id = setInterval(tick, 60_000)
+    return () => clearInterval(id)
+  }, [dayISO, todayISO])
+
+  // Hover preview card
+  const [hover, setHover] = useState<{ apt: CalendarAppointment; rect: DOMRect } | null>(null)
 
   const isToday = dayISO === todayISO
   const prevDay = addDays(dayISO, -1)
@@ -409,6 +439,14 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
                     />
                   ))}
 
+                  {/* Current-time line ("ahora") */}
+                  {nowPx !== null && (
+                    <div className="absolute left-0 right-0 z-[13] pointer-events-none" style={{ top: nowPx }}>
+                      <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-red-500 shadow-sm" />
+                      <div className="h-[2px] bg-red-500/80" />
+                    </div>
+                  )}
+
                   {/* Drop ghost */}
                   {isDrop && dropTarget && (
                     <div
@@ -431,9 +469,11 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
                         key={apt.id}
                         data-apt="1"
                         draggable
-                        onDragStart={(e) => handleDragStart(apt, e)}
+                        onDragStart={(e) => { setHover(null); handleDragStart(apt, e) }}
                         onDragEnd={handleDragEnd}
                         onClick={(e) => { e.stopPropagation(); if (!dragging) router.push(`/appointments/${apt.id}`) }}
+                        onMouseEnter={(e) => { if (!dragging) setHover({ apt, rect: e.currentTarget.getBoundingClientRect() }) }}
+                        onMouseLeave={() => setHover(null)}
                         className={`absolute rounded-lg px-2 py-1.5 text-left overflow-hidden text-white text-xs leading-snug hover:brightness-110 transition-all shadow-xs ${opacity} ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                         style={{
                           backgroundColor: color,
@@ -443,7 +483,6 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
                           width:  `calc(${w}% - 6px)`,
                           zIndex: 10,
                         }}
-                        title={`${apt.patient_name} · ${apt.treatment_type} — arrastra para reagendar`}
                       >
                         <p className="font-semibold truncate">{apt.patient_name || '—'}</p>
                         <p className="truncate opacity-80 text-[10px]">{formatTime(apt.scheduled_at)}</p>
@@ -457,6 +496,37 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
           </div>
         </div>
       </div>
+
+      {/* Hover preview card */}
+      {hover && !dragging && (() => {
+        const W = 240, gap = 10
+        const flipLeft = hover.rect.right + W + gap > window.innerWidth
+        const left = flipLeft ? Math.max(8, hover.rect.left - W - gap) : hover.rect.right + gap
+        const top  = Math.min(hover.rect.top, window.innerHeight - 175)
+        const dur  = hover.apt.duration_min && hover.apt.duration_min > 0 ? hover.apt.duration_min : DURATION_MIN
+        const start = formatTime(hover.apt.scheduled_at)
+        const end   = formatTime(new Date(new Date(hover.apt.scheduled_at).getTime() + dur * 60_000).toISOString())
+        const st    = STATUS_LABEL[hover.apt.status] ?? { text: hover.apt.status, cls: 'bg-mist text-slate' }
+        return (
+          <div
+            className="fixed z-50 w-60 rounded-xl border border-fog bg-white shadow-md p-3.5 pointer-events-none"
+            style={{ left, top }}
+          >
+            <p className="text-sm font-semibold text-ink truncate">{hover.apt.patient_name || 'Sin nombre'}</p>
+            <p className="text-xs text-slate mt-0.5">{hover.apt.treatment_type}</p>
+            <p className="text-sm font-medium text-ink mt-2">
+              {start} – {end} <span className="text-xs font-normal text-slate">({dur} min)</span>
+            </p>
+            {hover.apt.professional_name && (
+              <p className="flex items-center gap-1.5 text-xs text-slate mt-1.5">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: hover.apt.professional_color ?? '#9CA3AF' }} />
+                {hover.apt.professional_name}
+              </p>
+            )}
+            <span className={`inline-block mt-2.5 text-[11px] font-medium px-2 py-0.5 rounded-full ${st.cls}`}>{st.text}</span>
+          </div>
+        )
+      })()}
     </div>
   )
 }
