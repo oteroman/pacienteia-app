@@ -160,22 +160,24 @@ export default async function DashboardPage() {
 
       <OnboardingChecklist progress={onboarding} />
 
-      {/* Número héroe — dinero recuperado por el agente este mes */}
-      {recoveredMonth > 0 && (
+      {/* Hero del dueño — dinero recuperado + snapshot de hoy (siempre visible, mobile-first) */}
+      <div className="bg-white rounded-2xl border border-fog shadow-xs overflow-hidden">
         <Link
           href="/backfill"
-          className="block bg-white rounded-2xl border border-fog shadow-xs px-6 py-5 hover:bg-mist transition-colors"
+          className="block px-5 sm:px-6 py-5 hover:bg-mist transition-colors"
         >
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate">
                 Recuperado por PacienteIA este mes
               </p>
-              <p className="text-3xl font-extrabold text-lima-600 mt-1">
+              <p className="text-3xl sm:text-4xl font-extrabold text-lima-600 mt-1 tabular-nums">
                 S/ {recoveredMonth.toLocaleString('es-PE')}
               </p>
               <p className="text-xs text-slate mt-1">
-                Cupos de cancelaciones y ausencias que se volvieron a llenar
+                {recoveredMonth > 0
+                  ? 'Cupos de cancelaciones y ausencias que se volvieron a llenar'
+                  : 'PacienteIA recupera por ti los cupos de cancelaciones y ausencias'}
               </p>
             </div>
             <span className="shrink-0 text-xs font-semibold text-[#7C3AED] bg-[#F3EEFF] px-2.5 py-1 rounded-full">
@@ -183,23 +185,25 @@ export default async function DashboardPage() {
             </span>
           </div>
         </Link>
-      )}
+        {/* Snapshot de hoy */}
+        <div className="border-t border-fog px-5 sm:px-6 py-3 flex items-center gap-x-4 gap-y-1 flex-wrap text-sm">
+          <span className="text-slate">Hoy</span>
+          <Link href="/appointments" className="font-semibold text-ink hover:text-brand-700 transition-colors">
+            {appointments.length} cita{appointments.length !== 1 ? 's' : ''}
+          </Link>
+          {appointments.length > 0 && (
+            <span className="text-xs text-slate">
+              {confirmed} conf.{pending > 0 ? ` · ${pending} pend.` : ''}{noShows > 0 ? ` · ${noShows} inasist.` : ''}
+            </span>
+          )}
+          <span className="text-fog">·</span>
+          <span className="font-semibold text-lima-600 tabular-nums">S/ {ingresosDia.toLocaleString('es-PE')}</span>
+          <span className="text-xs text-slate">en ingresos</span>
+        </div>
+      </div>
 
-      {/* Fila 1 — KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="Citas hoy"
-          value={appointments.length}
-          sub={`${confirmed} confirmadas · ${pending} pendientes${noShows > 0 ? ` · ${noShows} inasist.` : ''}`}
-          color="text-brand-600"
-          subColor={noShows > 0 ? 'text-red-500' : undefined}
-        />
-        <KpiCard
-          label="Ingresos del día"
-          value={`S/ ${ingresosDia.toLocaleString('es-PE')}`}
-          sub="Citas atendidas con precio"
-          color={ingresosDia > 0 ? 'text-lima-600' : 'text-slate'}
-        />
+      {/* Fila 1 — KPIs operativos (citas e ingresos ya viven en el hero) */}
+      <div className="grid grid-cols-2 gap-4">
         <KpiCard
           label="Mensajes sin leer"
           value={totalUnread}
