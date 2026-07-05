@@ -12,11 +12,11 @@
 
 import { cookies } from 'next/headers'
 
-const ORG_COOKIE    = 'active_organization_id'
-const BRANCH_COOKIE = 'active_branch_id'
-const MAX_AGE       = 60 * 60 * 24 * 30  // 30 days
+export const ORG_COOKIE    = 'active_organization_id'
+export const BRANCH_COOKIE = 'active_branch_id'
+const MAX_AGE       = 60 * 60 * 24 * 365  // 1 year
 
-const COOKIE_OPTS = {
+export const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,

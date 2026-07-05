@@ -22,7 +22,12 @@ async function selectContext(organizationId: string, branchId: string) {
   redirect('/dashboard')
 }
 
-export default async function OrgSelectorPage() {
+export default async function OrgSelectorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const pick = (await searchParams).pick
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -51,15 +56,21 @@ export default async function OrgSelectorPage() {
     redirect('/onboarding')
   }
 
-  // Single-org onboarding redirect. NOTE: the context cookie is set via the
-  // picker's Server Action below (selectContext) — cookies cannot be written
-  // during a Server Component render in Next 15, so we do NOT auto-select here.
+  // Auto-forward single-org/single-branch users straight to the dashboard.
+  // The context cookie is set by the /org-selector/auto Route Handler (cookies
+  // cannot be written during a Server Component render in Next 15). ?pick=1
+  // disables the auto-forward so a validation failure can't cause a loop.
   if (memberships.length === 1) {
     const m   = memberships[0] as any
     const org = m.organizations
+    const branches: any[] = org?.branches ?? []
 
     if (org?.onboarding_status !== 'first_flow_active') {
       redirect('/onboarding/resume')
+    }
+
+    if (branches.length === 1 && pick !== '1') {
+      redirect(`/org-selector/auto?org=${org.id}&branch=${branches[0].id}`)
     }
   }
 
