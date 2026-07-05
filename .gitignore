@@ -29,9 +29,13 @@ next-env.d.ts
 
 # secretos / referencia con tokens
 docs/PacienteIA_Variables_tokens.csv
+memory/supabase_credentials.md
 
 # archivos temporales de office
 ~$*
+
+# trabajo académico personal — no pertenece al repo de la app
+trabajo final/
 
 .vercel
 .env*.local

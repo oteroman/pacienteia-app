@@ -487,7 +487,24 @@ Credenciales completas (keys, PAT, etc.) en `memory/supabase_credentials.md`.
 
 ## Guía para Multi-Agentes
 
-### Cuándo usar subagentes
+### SDLC Agéntico (ecosistema propio del repo)
+Roster de subagentes especializados en `.claude/agents/` + comandos en `.claude/commands/`. **Playbook completo: `docs/sdlc-agentico.md`.**
+
+| Fase | Subagente | Comando |
+|------|-----------|---------|
+| Descubrimiento | `analista-producto` | `/feature <idea>` (orquesta todo) |
+| Arquitectura | `arquitecto-plan` | |
+| Datos | `db-migrator` | `/migracion <cambio>` |
+| Backend | `backend-actions` | |
+| Integraciones | `integraciones` | |
+| UI | `frontend-clinico` | |
+| Gate seguridad/tenant | `guardian-rls-seguridad` | `/revision` |
+| Gate Regla de Hierro | `regla-de-hierro` | |
+| Release | `release-manager` | `/release` |
+
+Cada agente codifica los patrones reales de este repo (RLS, Server Actions, DESIGN.md, migraciones Node HTTPS, Regla de Hierro). Los dos gates de calidad son **solo lectura y obligatorios antes de release**.
+
+### Subagentes genéricos de Claude Code
 - **Explore**: para mapear archivos antes de una refactor grande
 - **Plan**: para diseñar arquitectura de un feature nuevo antes de codear
 - **general-purpose**: para búsquedas amplias en el codebase o research
