@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter }               from 'next/navigation'
-import { useState, useRef }        from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { dragRescheduleAppointment } from '@/app/actions/appointments'
 import type { CalendarAppointment, CalendarProfessional, CalendarSchedule, CalendarBlock } from './page'
 
@@ -157,6 +157,11 @@ function slotToTime(slotIdx: number): string {
   return `${h}:${String(m).padStart(2, '0')}`
 }
 
+function aptTimeLabel(isoUtc: string): string {
+  const { h, m } = limaHM(isoUtc)
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -178,6 +183,23 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
   const [dropTarget, setDropTarget]     = useState<DropTarget | null>(null)
   const [dragging, setDragging]         = useState(false)
   const [saving, setSaving]             = useState(false)
+
+  // Current-time indicator ("ahora") — client-only to avoid hydration mismatch.
+  const [now, setNow] = useState<{ dayISO: string; topPx: number } | null>(null)
+  useEffect(() => {
+    function tick() {
+      const lima = utcToLima(Date.now())
+      const mins = lima.getUTCHours() * 60 + lima.getUTCMinutes()
+      if (mins < START_HOUR * 60 || mins > END_HOUR * 60) { setNow(null); return }
+      setNow({
+        dayISO: limaDateISO(new Date().toISOString()),
+        topPx:  (mins - START_HOUR * 60) / SLOT_MIN * SLOT_H,
+      })
+    }
+    tick()
+    const id = setInterval(tick, 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   const saturdayISO = addDays(weekStartISO, 5)
   const days        = Array.from({ length: 6 }, (_, i) => addDays(weekStartISO, i))
@@ -374,7 +396,7 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
                   </button>
                   <button
                     onClick={() => goNewApt(dayISO)}
-                    className="mt-1 w-full text-[10px] text-fog hover:text-brand-500 hover:bg-brand-50 rounded transition-colors py-0.5"
+                    className="mt-1 w-full text-[10px] text-slate/70 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors py-0.5"
                   >
                     + cita
                   </button>
@@ -482,6 +504,14 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
                     />
                   ))}
 
+                  {/* Current-time line ("ahora") */}
+                  {now?.dayISO === dayISO && (
+                    <div className="absolute left-0 right-0 z-[13] pointer-events-none" style={{ top: now.topPx }}>
+                      <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-red-500 shadow-sm" />
+                      <div className="h-[2px] bg-red-500/80" />
+                    </div>
+                  )}
+
                   {/* Drop ghost */}
                   {isDrop && dropTarget && (
                     <div
@@ -518,7 +548,9 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
                         }}
                         title={`${apt.patient_name} · ${apt.treatment_type} — arrastra para reagendar`}
                       >
-                        <p className="font-semibold truncate leading-tight">{apt.patient_name || '—'}</p>
+                        <p className="font-semibold truncate leading-tight">
+                          <span className="opacity-75 font-normal">{aptTimeLabel(apt.scheduled_at)}</span> {apt.patient_name || '—'}
+                        </p>
                         <p className="truncate opacity-80 mt-0.5">{apt.treatment_type}</p>
                         {apt.professional_name && (
                           <p className="truncate opacity-60 text-[9px]">{apt.professional_name}</p>
