@@ -51,19 +51,15 @@ export default async function OrgSelectorPage() {
     redirect('/onboarding')
   }
 
-  // Auto-select: one org with branches and onboarding complete
+  // Single-org onboarding redirect. NOTE: the context cookie is set via the
+  // picker's Server Action below (selectContext) — cookies cannot be written
+  // during a Server Component render in Next 15, so we do NOT auto-select here.
   if (memberships.length === 1) {
-    const m    = memberships[0] as any
-    const org  = m.organizations
-    const branches: any[] = org?.branches ?? []
+    const m   = memberships[0] as any
+    const org = m.organizations
 
     if (org?.onboarding_status !== 'first_flow_active') {
       redirect('/onboarding/resume')
-    }
-
-    if (branches.length === 1) {
-      await setActiveContext(org.id, branches[0].id)
-      redirect('/dashboard')
     }
   }
 
