@@ -30,6 +30,9 @@ next-env.d.ts
 # secretos / referencia con tokens
 docs/PacienteIA_Variables_tokens.csv
 memory/supabase_credentials.md
+contrasenhas.txt
+contrasenha*.txt
+*.secret
 
 # archivos temporales de office
 ~$*
