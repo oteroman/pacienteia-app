@@ -3,9 +3,16 @@
 > Lee antes de empezar. Añade una entrada al tope del historial al terminar.
 
 ## Pendiente / próximo
-- **Sin commitear (esta sesión):** contador de dinero recuperado (`lib/backfill/index.ts`) + widget del dashboard + ecosistema SDLC agéntico (`.claude/agents/`, `.claude/commands/`, `docs/sdlc-agentico.md`, `memory/`). Requieren OK del usuario para commit.
-- **PR #1 abierto** en `github.com/oteroman/pacienteia-app` (rama `chore/consolidate-work-and-scrub-secrets`) — **bloqueado hasta rotar credenciales** del historial (ver `guardian-rls-seguridad`).
-- Recordar: build vía `npx vercel --prod` desde local históricamente saltaba git → mantener git como fuente de verdad.
+- 🔴 **Migración `20260705000001_deposit_expiry` SIN aplicar** — no hay PAT de Management en el entorno ni CLI instalada (la limpieza de secretos funcionó). Debe aplicarla el dueño (SQL Editor del dashboard) o proveer `SUPABASE_PAT`. **NO desplegar la feature no-show-blindado hasta aplicarla** (`sendPaymentRequest` escribe `payment_requested_at`).
+- **PR #1 bloqueado** hasta rotar credenciales del historial (ver `guardian-rls-seguridad`).
+- Pendiente agendar el cron `/api/internal/deposit-expiry` (n8n o Vercel Cron) cada 15-30 min, tras aplicar migración + desplegar.
+- Todo local, sin push.
 
 ## Historial
-_(sin releases ejecutados por este agente aún)_
+
+### 2026-07-05 — Consolidación a git (3 commits, sin push)
+- `282d1e3` feat(recovery): contador dinero recuperado + widget.
+- `6727b9d` chore(sdlc): ecosistema agéntico + `memory/` base.
+- `42039e8` feat(no-show-blindado): liberar cupos con separación vencida.
+- `trabajo final/` y `memory/supabase_credentials.md` excluidos por `.gitignore`. Escaneo de secretos limpio.
+- **No se pudo aplicar la migración** (sin PAT/CLI) — queda para el dueño.
