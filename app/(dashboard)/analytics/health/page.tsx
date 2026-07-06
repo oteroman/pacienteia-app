@@ -164,7 +164,7 @@ function SummaryCard({ label, value, color }: {
   const vc = { red: 'text-red-700', amber: 'text-amber-700', green: 'text-lima-700', blue: 'text-blue-700' }[color]
   return (
     <div className={`rounded-xl p-4 text-center space-y-1 border ${bg}`}>
-      <p className={`text-3xl font-bold ${vc}`}>{value}</p>
+      <p className={`text-3xl font-bold tabular-nums ${vc}`}>{value}</p>
       <p className="text-xs text-slate leading-tight">{label}</p>
     </div>
   )

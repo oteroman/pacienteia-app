@@ -387,7 +387,7 @@ function FunnelCard({
   return (
     <div className="bg-white rounded-2xl border border-fog shadow-xs p-5">
       <p className="text-sm text-slate">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${color}`}>{display}</p>
+      <p className={`text-3xl font-bold tabular-nums mt-1 ${color}`}>{display}</p>
       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
         {d.dir !== 'flat' && (
           <span
@@ -435,7 +435,7 @@ function EffCard({
         <span className={`w-2 h-2 rounded-full shrink-0 ${dotMap[health]}`} />
         <p className="text-sm text-slate">{label}</p>
       </div>
-      <p className={`text-3xl font-bold mt-1 ${colorMap[health]}`}>{value}</p>
+      <p className={`text-3xl font-bold tabular-nums mt-1 ${colorMap[health]}`}>{value}</p>
       <p className="text-xs text-slate mt-1.5">{sub}</p>
     </div>
   )

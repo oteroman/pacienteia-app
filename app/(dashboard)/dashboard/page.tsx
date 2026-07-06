@@ -541,7 +541,7 @@ function KpiCard({
   const inner = (
     <div className="bg-white rounded-2xl border border-fog shadow-xs p-5 h-full">
       <p className="text-sm text-slate">{label}</p>
-      <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
+      <p className={`text-3xl font-bold mt-1 tabular-nums ${color}`}>{value}</p>
       <p className={`text-xs mt-1.5 ${subColor ?? 'text-slate'}`}>{sub}</p>
     </div>
   )

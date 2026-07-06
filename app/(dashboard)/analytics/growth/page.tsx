@@ -476,7 +476,7 @@ function HeroKpi({
   return (
     <div className="bg-white rounded-2xl border border-fog shadow-xs p-5">
       <p className="text-xs text-slate">{label}</p>
-      <p className={`text-2xl font-bold mt-1 ${accentCls}`}>{value}</p>
+      <p className={`text-2xl font-bold tabular-nums mt-1 ${accentCls}`}>{value}</p>
       <p className={`text-xs mt-1.5 ${subColor}`}>{sub}</p>
     </div>
   )

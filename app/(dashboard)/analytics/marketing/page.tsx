@@ -41,7 +41,7 @@ function KpiCard({ label, value, sub, alert }: {
   return (
     <div className={`rounded-xl border p-4 ${alert ? 'border-red-200 bg-red-50' : 'border-fog bg-white'}`}>
       <p className="text-xs text-slate mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${alert ? 'text-red-700' : 'text-ink'}`}>{value}</p>
+      <p className={`text-2xl font-bold tabular-nums ${alert ? 'text-red-700' : 'text-ink'}`}>{value}</p>
       {sub && <p className="text-xs text-slate mt-0.5">{sub}</p>}
     </div>
   )
