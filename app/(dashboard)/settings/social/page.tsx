@@ -51,9 +51,9 @@ export default async function SocialPage({
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-ink">Redes Sociales</h1>
+        <h1 className="text-2xl font-bold text-ink">Redes sociales</h1>
         <p className="text-sm text-slate mt-1">
-          Conecta tus páginas para capturar leads de anuncios y responder mensajes directos desde PacienteIA.
+          Conecta tus páginas para capturar consultas de anuncios y responder mensajes directos desde PacienteIA.
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default async function SocialPage({
         logo="f"
         logoBg="bg-[#1877F2]"
         platform="Facebook Messenger"
-        description="Los mensajes de tu Página de Facebook aparecen en la bandeja. Los leads de tus anuncios ingresan automáticamente al pipeline."
+        description="Los mensajes de tu Página de Facebook aparecen en la bandeja. Las consultas de tus anuncios ingresan automáticamente a tu bandeja."
         connected={fbConnected}
         connectedLabel={fbConn?.page_name ?? undefined}
         connectedAt={fbConn?.connected_at}
@@ -122,7 +122,7 @@ export default async function SocialPage({
               )}
             </div>
             <p className="text-xs text-slate mt-1">
-              Los leads de tus campañas de TikTok Lead Generation ingresan automáticamente al pipeline. Requiere configurar el webhook en TikTok Ads Manager.
+              Las consultas de tus campañas de TikTok Lead Generation ingresan automáticamente a tu bandeja. Requiere configurar el webhook en TikTok Ads Manager.
             </p>
           </div>
         </div>

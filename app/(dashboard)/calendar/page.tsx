@@ -1,4 +1,5 @@
 import { redirect }           from 'next/navigation'
+import { headers }            from 'next/headers'
 import { createClient }       from '@/lib/supabase/server'
 import { createAdminClient }  from '@/lib/supabase/admin'
 import { getActiveContext }   from '@/lib/tenant/context'
@@ -90,7 +91,11 @@ interface PageProps {
 
 export default async function CalendarPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const view   = params.view === 'day' ? 'day' : 'week'
+  // Default a vista diaria en móvil (la grilla semanal de 6 columnas se aprieta
+  // a 390px); un ?view= explícito siempre gana, así la navegación conserva la vista.
+  const ua       = (await headers()).get('user-agent') ?? ''
+  const isMobile = /Mobile/i.test(ua)
+  const view     = params.view === 'day' ? 'day' : params.view === 'week' ? 'week' : (isMobile ? 'day' : 'week')
 
   const ctx = await getActiveContext()
   if (!ctx?.organizationId || !ctx?.branchId) redirect('/org-selector')

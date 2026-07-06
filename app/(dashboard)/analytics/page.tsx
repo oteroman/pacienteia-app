@@ -183,7 +183,7 @@ export default async function AnalyticsPage({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-ink">KPIs operacionales</h1>
+          <h1 className="text-2xl font-bold text-ink">Indicadores operacionales</h1>
           <p className="text-sm text-slate mt-1">{label}</p>
         </div>
         <PeriodSelector current={period} />
@@ -196,7 +196,7 @@ export default async function AnalyticsPage({
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <FunnelCard
-            label="Leads recibidos"
+            label="Consultas recibidas"
             value={leadsCount}
             prev={prevLeadsCount}
             format="number"

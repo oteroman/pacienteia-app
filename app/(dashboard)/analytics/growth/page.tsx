@@ -220,11 +220,11 @@ export default async function GrowthPage({ searchParams }: PageProps) {
           accent="lima"
         />
         <HeroKpi
-          label="Leads convertidos"
+          label="Consultas convertidas"
           value={totalConverted.toLocaleString('es-PE')}
           sub={totalLeads > 0
-            ? `${Math.round((totalConverted / totalLeads) * 100)}% de ${totalLeads} leads`
-            : 'Sin leads aún'}
+            ? `${Math.round((totalConverted / totalLeads) * 100)}% de ${totalLeads} consultas`
+            : 'Sin consultas aún'}
           subColor="text-slate"
           accent="brand"
         />
@@ -361,7 +361,7 @@ export default async function GrowthPage({ searchParams }: PageProps) {
                 <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Citas</th>
                 <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Completadas</th>
                 <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">No-shows</th>
-                <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Leads</th>
+                <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Consultas</th>
                 <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Convertidos</th>
                 <th className="text-right px-4 py-3 text-[11px] font-semibold text-slate uppercase tracking-[0.06em]">Reactivados</th>
               </tr>

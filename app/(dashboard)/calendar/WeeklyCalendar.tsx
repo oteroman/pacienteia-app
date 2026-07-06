@@ -227,7 +227,7 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
   }
 
   function goWeek(delta: -1 | 1) {
-    router.push(`/calendar?week=${addDays(weekStartISO, delta * 7)}`)
+    router.push(`/calendar?view=week&week=${addDays(weekStartISO, delta * 7)}`)
   }
 
   function goToday() {
@@ -238,7 +238,7 @@ export default function WeeklyCalendar({ appointments, professionals, schedules,
       d.setUTCDate(d.getUTCDate() - back)
       return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
     })()
-    router.push(`/calendar?week=${todayMonday}`)
+    router.push(`/calendar?view=week&week=${todayMonday}`)
   }
 
   function goDay(dayISO: string) {

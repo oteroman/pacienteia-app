@@ -83,7 +83,7 @@ export default async function ReactivationPage({ searchParams }: { searchParams:
     return (
       <div className="max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Analytics — Reactivación</h1>
+          <h1 className="text-2xl font-bold text-ink">Reactivación de pacientes</h1>
           <p className="text-sm text-slate mt-1">Embudo de campañas de reactivación de pacientes inactivos.</p>
         </div>
         <div className="rounded-2xl border border-fog bg-white p-10 text-center space-y-4">

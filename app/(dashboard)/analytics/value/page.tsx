@@ -47,7 +47,7 @@ export default async function ValueDashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Value Dashboard</h1>
+          <h1 className="text-2xl font-bold text-ink">Valor generado</h1>
           <p className="text-sm text-slate mt-1">
             ROI estimado · {clinics.length} cuentas activas · datos en tiempo real
           </p>

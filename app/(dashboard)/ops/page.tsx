@@ -183,7 +183,7 @@ export default async function OpsPage() {
                   <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Completadas</th>
                   <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Fill rate</th>
                   <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">SLA</th>
-                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Revenue</th>
+                  <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Ingresos</th>
                   <th className="pb-2 text-[11px] font-semibold text-slate uppercase tracking-[0.06em] text-right">Score</th>
                 </tr>
               </thead>

@@ -32,7 +32,7 @@ export default async function HealthDashboardPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">Customer Health</h1>
+          <h1 className="text-2xl font-bold text-ink">Salud del cliente</h1>
           <p className="text-sm text-slate mt-1">
             Score 0-100 · {clinics.length} cuentas activas · datos en tiempo real
           </p>

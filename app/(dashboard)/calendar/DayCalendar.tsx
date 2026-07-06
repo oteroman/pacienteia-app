@@ -305,7 +305,7 @@ export default function DayCalendar({ appointments, professionals, schedules, bl
             </span>
           )}
           <button
-            onClick={() => router.push(`/calendar?week=${weekStartISO}`)}
+            onClick={() => router.push(`/calendar?view=week&week=${weekStartISO}`)}
             className="text-xs font-medium text-slate border border-fog px-3 py-1.5 rounded-lg hover:bg-mist transition-colors"
           >
             Vista semanal
