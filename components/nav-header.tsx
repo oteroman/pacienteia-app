@@ -20,6 +20,13 @@ const STANDALONE: NavItem[] = [
   { label: 'Bandeja', href: '/inbox' },
 ]
 
+// Acciones de creación frecuentes — accesibles en ≤2 clics desde cualquier pantalla.
+const CREATE_ACTIONS: NavItem[] = [
+  { label: 'Nuevo paciente',     href: '/patients/new',     desc: 'Registrar un paciente'       },
+  { label: 'Nueva cita',         href: '/appointments/new', desc: 'Agendar una cita'            },
+  { label: 'Registrar consulta', href: '/inbox/new',        desc: 'Entrada manual a la bandeja' },
+]
+
 const GROUPS: NavGroup[] = [
   {
     id: 'gestion',
@@ -70,6 +77,7 @@ export function NavHeader({ user }: NavHeaderProps) {
   const { sub, trialDaysLeft } = usePlanStatus()
 
   const [openGroup, setOpenGroup] = useState<string | null>(null)
+  const [createOpen, setCreateOpen]   = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const navRef = useRef<HTMLElement>(null)
 
@@ -98,10 +106,11 @@ export function NavHeader({ user }: NavHeaderProps) {
     function handleClick(e: MouseEvent) {
       if (!navRef.current?.contains(e.target as Node)) {
         setOpenGroup(null)
+        setCreateOpen(false)
       }
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') { setOpenGroup(null); setMobileOpen(false) }
+      if (e.key === 'Escape') { setOpenGroup(null); setCreateOpen(false); setMobileOpen(false) }
     }
     document.addEventListener('mousedown', handleClick)
     window.addEventListener('keydown', handleKey)
@@ -229,6 +238,32 @@ export function NavHeader({ user }: NavHeaderProps) {
                 </span>
               )}
 
+              {/* Quick create (desktop) — acciones frecuentes en ≤2 clics */}
+              <div className="relative hidden lg:block">
+                <button
+                  onClick={() => setCreateOpen(v => !v)}
+                  className="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-3 py-1.5 rounded-md transition-colors"
+                >
+                  + Nuevo
+                  <ChevronDown open={createOpen} />
+                </button>
+                {createOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-fog rounded-xl shadow-md z-50 py-1.5 overflow-hidden">
+                    {CREATE_ACTIONS.map((a) => (
+                      <Link
+                        key={a.href}
+                        href={a.href}
+                        onClick={() => setCreateOpen(false)}
+                        className="flex flex-col px-4 py-2.5 hover:bg-mist transition-colors"
+                      >
+                        <span className="text-sm font-medium text-ink">{a.label}</span>
+                        {a.desc && <span className="text-xs text-slate mt-0.5">{a.desc}</span>}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Config (desktop) — enlaza al hub de configuración */}
               <Link
                 href="/settings"
@@ -292,6 +327,16 @@ export function NavHeader({ user }: NavHeaderProps) {
             <div className="px-5 py-3 bg-mist border-b border-fog">
               <p className="text-[10px] font-semibold text-slate uppercase tracking-widest mb-0.5">Clínica activa</p>
               <p className="text-sm font-semibold text-ink">{clinic.name}</p>
+            </div>
+
+            {/* Quick create (mobile) */}
+            <div className="px-5 py-3 border-b border-fog grid grid-cols-2 gap-2">
+              <Link href="/appointments/new" className="text-center bg-brand-600 text-white text-sm font-semibold py-2 rounded-lg">
+                + Cita
+              </Link>
+              <Link href="/patients/new" className="text-center border border-brand-200 text-brand-700 text-sm font-semibold py-2 rounded-lg">
+                + Paciente
+              </Link>
             </div>
 
             {/* Nav items */}
