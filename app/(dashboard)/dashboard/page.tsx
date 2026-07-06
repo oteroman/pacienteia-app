@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { getOnboardingProgress } from '@/lib/plans/onboarding'
 import { OnboardingChecklist } from '@/components/plan/onboarding-checklist'
 import { fetchRevenueOpportunities } from '@/lib/analytics/opportunities'
+import { NoShowButton } from '@/components/appointment/no-show-button'
 
 interface AppointmentRow {
   id: string
@@ -304,10 +305,10 @@ export default async function DashboardPage() {
           ) : (
             <ul className="divide-y divide-fog">
               {appointments.map((apt) => (
-                <li key={apt.id}>
+                <li key={apt.id} className="flex items-center hover:bg-mist transition-colors">
                   <Link
                     href={`/appointments/${apt.id}`}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-mist transition-colors"
+                    className="flex-1 min-w-0 px-6 py-4 flex items-center justify-between"
                   >
                     <div>
                       <p className="text-sm font-medium text-ink">
@@ -345,6 +346,11 @@ export default async function DashboardPage() {
                       <StatusBadge status={apt.status} />
                     </div>
                   </Link>
+                  {(apt.status === 'scheduled' || apt.status === 'confirmed') && (
+                    <div className="pr-4 shrink-0">
+                      <NoShowButton id={apt.id} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
